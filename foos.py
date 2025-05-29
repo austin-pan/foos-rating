@@ -58,19 +58,19 @@ for i, row in games.iterrows():
     # d = delta.square_differential(actual_score_diff)
 
     # TODO calculate these directly rather than counting (I'm lazy)
-    stats.loc[win_team.offense, "wins"] += 1
-    stats.loc[win_team.offense, "offense_wins"] += 1
-    stats.loc[win_team.defense, "wins"] += 1
-    stats.loc[win_team.defense, "defense_wins"] += 1
-    stats.loc[lose_team.offense, "losses"] += 1
-    stats.loc[lose_team.offense, "offense_losses"] += 1
-    stats.loc[lose_team.defense, "losses"] += 1
-    stats.loc[lose_team.defense, "defense_losses"] += 1
+    stats.at[win_team.offense, "wins"] += 1
+    stats.at[win_team.offense, "offense_wins"] += 1
+    stats.at[win_team.defense, "wins"] += 1
+    stats.at[win_team.defense, "defense_wins"] += 1
+    stats.at[lose_team.offense, "losses"] += 1
+    stats.at[lose_team.offense, "offense_losses"] += 1
+    stats.at[lose_team.defense, "losses"] += 1
+    stats.at[lose_team.defense, "defense_losses"] += 1
 
-    stats.loc[win_team.offense, "rating"] += d
-    stats.loc[win_team.defense, "rating"] += d
-    stats.loc[lose_team.offense, "rating"] -= d
-    stats.loc[lose_team.defense, "rating"] -= d
+    stats.at[win_team.offense, "rating"] += d
+    stats.at[win_team.defense, "rating"] += d
+    stats.at[lose_team.offense, "rating"] -= d
+    stats.at[lose_team.defense, "rating"] -= d
 
 pretty_stats = stats.copy()
 pretty_stats["rating"] = stats["rating"].apply(round)
