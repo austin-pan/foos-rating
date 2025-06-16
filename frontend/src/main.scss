@@ -1,0 +1,11 @@
+@use "./styles/theme";
+
+* {
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  color: theme.$primaryText;
+}
+
+body {
+  margin: 0px;
+  background-color: theme.$background;
+}

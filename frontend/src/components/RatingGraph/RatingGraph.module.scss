@@ -1,0 +1,28 @@
+@use "../../styles/theme";
+
+.graph {
+  flex: 1;
+  min-width: 500px;
+  margin: 10px 50px 20px 10px;
+}
+
+.customTooltip {
+  background-color: rgba(theme.$accent1, 0.85);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 2px 2px 5px gray;
+}
+
+.tooltipLabel {
+  margin-bottom: 8px;
+}
+
+.tooltipEntries {
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  gap: 8px;
+
+  .delta {
+    text-align: right;
+  }
+}
