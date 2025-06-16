@@ -136,7 +136,7 @@ def add_player(player: models.PlayerCreate):
         return player_db
 
 
-@app.get("/timeseries", response_model=list[dict[str, Any]])
+@app.get("/timeseries/", response_model=list[dict[str, Any]])
 def read_ratings():
     with Session(db.engine) as session:
         # Select the ratings each participating player ended at the end of each day
@@ -193,3 +193,8 @@ def read_ratings():
             timeseries_results.append(timeseries_result)
 
         return timeseries_results
+
+
+@app.get("/heartbeat/")
+def heartbeat():
+    return {"ok": True}

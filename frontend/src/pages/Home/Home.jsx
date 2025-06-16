@@ -12,6 +12,8 @@ import Players from "../../db/Players.js";
 
 import styles from "./Home.module.scss";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,6 +27,18 @@ const Home = () => {
     setTimeSeries(await TimeSeries.readTimeSeries());
     setPlayers(await Players.readPlayers());
   }
+
+  useEffect(() => {
+    const heartbeatKey = setInterval(() => {
+      fetch(`${API_URL}/heartbeat/`, {
+        mode: "cors"
+      });
+    }, 10 * 60 * 1000); // Every 10 minutes
+
+    return () => {
+      clearInterval(heartbeatKey);
+    }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
