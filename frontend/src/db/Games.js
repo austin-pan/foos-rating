@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 const readGames = async () => {
-  const response = await fetch(`${API_URL}/games`, {
+  const response = await fetch(`${API_URL}/games/`, {
     mode: "cors"
   });
 
@@ -15,7 +15,7 @@ const readGames = async () => {
 }
 
 const addGame = async (game) => {
-  const response = await fetch(`${API_URL}/games`, {
+  const response = await fetch(`${API_URL}/games/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -30,7 +30,7 @@ const addGame = async (game) => {
 }
 
 const deleteRecentGame = async () => {
-  const response = await fetch(`${API_URL}/games/recent`, {
+  const response = await fetch(`${API_URL}/games/recent/`, {
     method: "DELETE",
     mode: "cors"
   });
