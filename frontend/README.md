@@ -2,6 +2,13 @@
 
 ## Run `dev` website
 
+First, set up `.env` with
+
+- `VITE_API_URL` to the URL where the backend service
+is running.
+
+Then, to run React website:
+
 ```sh
 npm install
 npm run dev

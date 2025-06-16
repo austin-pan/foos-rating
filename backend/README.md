@@ -14,6 +14,12 @@ communication.
 
 ## Run `dev` Server
 
+First, set up `.env` with
+
+- `DB_URL` set to the URL of the Postgres database
+- `ORIGINS` set to the originating URL(s) to allow access to. Can be a multiline
+string. Use `"*"` to allow all access during development.
+
 ```sh
 fastapi dev service.py
 ```
