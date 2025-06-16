@@ -1,7 +1,9 @@
 import sys
 from datetime import datetime
+
 from sqlmodel import Session, select
 import pandas as pd
+from tqdm import tqdm
 
 from foos import color
 from foos.database import engine, create_db_and_tables
@@ -38,7 +40,7 @@ def populate_db():
         game_data["yellow_back"] = game_data["yellow_back"].str.lower().replace(" ", "_")
         game_data["black_front"] = game_data["black_front"].str.lower().replace(" ", "_")
         game_data["black_back"] = game_data["black_back"].str.lower().replace(" ", "_")
-        for _, game in game_data.iterrows():
+        for _, game in tqdm(game_data.iterrows()):
             db_game = Game(
                 date=datetime.strptime(game["date"], "%m/%d/%y"),
                 yellow_offense=game["yellow_front"],
