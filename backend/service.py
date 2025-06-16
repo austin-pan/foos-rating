@@ -28,6 +28,11 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def on_startup():
+    db.create_db_and_tables()
+
+
 @app.post("/games/", response_model=models.GamePublic)
 def create_game(game: models.GameCreate):
     with Session(db.engine) as session:
