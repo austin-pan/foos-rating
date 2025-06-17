@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className={styles.customTooltip}>
-        <div className={styles.tooltipLabel}>{new Date(label).toLocaleDateString("en-US")}</div>
+        <div className={styles.tooltipLabel}>{new Date(label).toLocaleDateString("en-US", { timeZone: "UTC" })}</div>
         <div className={styles.tooltipEntries}>
           {payload.map(entry => {
             const delta = entry.payload[`${entry.name}_delta`]
@@ -39,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const RatingGraph = ({data, players}) => {
   const renderLineChart = (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer className="graphContainer">
       <LineChart data={data}>
         {
           players.map(p => {
@@ -50,7 +50,12 @@ const RatingGraph = ({data, players}) => {
         }
 
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" type="number" tickFormatter={time => new Date(time).toLocaleDateString("en-US")} domain={['dataMin', 'dataMax']} scale="linear" />
+        <XAxis
+          dataKey="date"
+          type="number"
+          tickFormatter={time => new Date(time).toLocaleDateString("en-US", { timeZone: "UTC" })}
+          domain={['dataMin', 'dataMax']}
+          scale="linear" />
         <YAxis type="number" domain={['dataMin - 20', 'dataMax + 20']} scale="linear" />
         <Tooltip content={<CustomTooltip />} />
       </LineChart>
