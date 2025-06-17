@@ -195,6 +195,6 @@ def read_ratings():
         return timeseries_results
 
 
-@app.get("/heartbeat/")
+@app.get("/")
 def heartbeat():
     return {"ok": True}
