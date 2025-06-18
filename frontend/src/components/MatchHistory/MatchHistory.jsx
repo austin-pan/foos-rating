@@ -33,7 +33,7 @@ const RecentGames = ({games, players}) => {
       }}>
       <Table
         sx={{
-          minWidth: 650,
+          minWidth: '550px',
           '& .MuiTableCell-root': {
             padding: '8px 16px',
             fontSize: '0.875rem'
