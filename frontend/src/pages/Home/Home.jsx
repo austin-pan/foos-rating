@@ -127,7 +127,7 @@ const ErrorPage = () => {
   return (
     <div className={styles.error}>
       <h1>An error has occurred</h1>
-      <p>The backend probably went to sleep and is now waking up. Hopefully refreshing shortly will fix everything!</p>
+      <p>The backend probably went to sleep and is now waking up. Hopefully <strong>refreshing</strong> shortly will fix everything!</p>
         <Icon path={mdiSleep} className={styles.icon} />
     </div>
   );
