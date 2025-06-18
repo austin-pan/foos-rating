@@ -39,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const RatingGraph = ({data, players}) => {
   const renderLineChart = (
-    <ResponsiveContainer className="graphContainer">
+    <ResponsiveContainer>
       <LineChart data={data}>
         {
           players.map(p => {

@@ -35,7 +35,7 @@ const Home = () => {
       fetch(`${API_URL}/`, {
         mode: "cors"
       });
-    }, 5 * 1000); // Every 10 minutes
+    }, 10 * 60 * 1000); // Every 10 minutes
 
     return () => {
       clearInterval(heartbeatKey);
@@ -63,10 +63,10 @@ const Home = () => {
       {
         isLoading ?
         <LoadingIcon /> :
-        <div className={styles.stats}>
+        <>
           <Leaderboard players={players} />
           <RatingGraph data={timeseries} players={players} />
-        </div>
+        </>
       }
 
       <h1>Match History</h1>
