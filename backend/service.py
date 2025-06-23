@@ -109,14 +109,20 @@ def read_players():
         ).all()
         player_ids = [p.id for p in db_players]
         player_id_to_rating = rating.get_player_ratings(session, player_ids)
+        player_id_to_game_count = rating.get_player_game_counts(session, player_ids)
         # Account for first-time players
         for player_id in player_ids:
             if player_id not in player_id_to_rating:
                 player_id_to_rating[player_id] = rating.BASE_RATING
+            if player_id not in player_id_to_game_count:
+                player_id_to_game_count[player_id] = 0
         players = [
             models.RatedPlayerPublic.model_validate(
                 p,
-                update={"rating": round(player_id_to_rating[p.id])}
+                update={
+                    "rating": round(player_id_to_rating[p.id]),
+                    "game_count": player_id_to_game_count[p.id]
+                }
             )
             for p in db_players
         ]

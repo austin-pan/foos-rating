@@ -46,6 +46,19 @@ def get_player_ratings(session: Session, player_ids: list[str]) -> dict[str, flo
     return latest_ratings
 
 
+def get_player_game_counts(session: Session, player_ids: list[str]) -> dict[str, int]:
+    game_counts_query = (
+        select(
+            models.TimeSeries.player_id,
+            func.count(models.TimeSeries.game_id).label("game_count")
+        )
+        .where(col(models.TimeSeries.player_id).in_(player_ids))
+        .group_by(models.TimeSeries.player_id)
+    )
+    game_counts: dict[str, int] = dict(session.exec(game_counts_query).all())
+    return game_counts
+
+
 def update_ratings(db_game: models.Game, player_id_to_rating: dict[str, float]):
     player_id_to_rating = player_id_to_rating.copy()
     game = FoosGame(

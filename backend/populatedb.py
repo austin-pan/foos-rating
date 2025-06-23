@@ -42,13 +42,13 @@ def populate_db():
         game_data["black_back"] = game_data["black_back"].str.lower().replace(" ", "_")
         for _, game in tqdm(game_data.iterrows()):
             db_game = Game(
-                date=datetime.strptime(game["date"], "%m/%d/%y"),
-                yellow_offense=game["yellow_front"],
-                yellow_defense=game["yellow_back"],
-                yellow_score=int(game["yellow_score"]),
-                black_offense=game["black_front"],
-                black_defense=game["black_back"],
-                black_score=int(game["black_score"])
+                date=datetime.strptime(game[["date"]].item(), "%m/%d/%Y"),
+                yellow_offense=game[["yellow_front"]].item(),
+                yellow_defense=game[["yellow_back"]].item(),
+                yellow_score=int(game[["yellow_score"]].item()),
+                black_offense=game[["black_front"]].item(),
+                black_defense=game[["black_back"]].item(),
+                black_score=int(game[["black_score"]].item())
             )
             session.add(db_game)
             session.commit()
@@ -70,9 +70,6 @@ def populate_db():
             for player_id, updated_rating in game_player_id_to_updated_rating.items():
                 win = player_id_to_rating[player_id] < updated_rating
                 player_id_to_rating[player_id] = updated_rating
-
-                # player_id_to_player[player_id].rating = updated_rating
-                # session.add(player_id_to_player[player_id])
 
                 db_timeseries_point = TimeSeries(
                     game_id=db_game.id,

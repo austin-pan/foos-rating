@@ -43,6 +43,7 @@ class PlayerPublic(PlayerBase):
 
 class RatedPlayerPublic(PlayerPublic):
     rating: float
+    game_count: int
 
 
 class Player(PlayerBase, table=True):
