@@ -1,8 +1,64 @@
 import { useState } from "react";
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import Container from "@mui/material/Container";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
 
 import Games from "../../db/Games.js";
 
-import styles from "./GameForm.module.scss";
+const PlayersSelect = ({fieldName, label, formData, onFormChange, players}) => {
+  const selectedPlayers = new Set([
+    formData.yellow_offense,
+    formData.yellow_defense,
+    formData.black_offense,
+    formData.black_defense
+  ]);
+  return (
+    <TextField
+      select
+      label={label}
+      name={fieldName}
+      value={formData[fieldName]}
+      onChange={onFormChange}
+      required
+      slotProps={{
+        select: {
+          native: true
+        }
+      }}
+      size="small"
+      margin="dense"
+      fullWidth
+    >
+      <option value="" disabled></option>
+      {players.map(p => {
+        return (
+          <option key={p.id} value={p.id} disabled={selectedPlayers.has(p.id)}>{p.name}</option>
+        )
+      })}
+    </TextField>
+  )
+}
+
+const ScoreField = ({fieldName, label, formData, onFormChange}) => {
+  return (
+    <TextField
+      fullWidth
+      label={label}
+      name={fieldName}
+      value={formData[fieldName]}
+      onChange={onFormChange}
+      type="number"
+      size="small"
+      margin="dense"
+      required
+    />
+  )
+}
 
 const GameRecorder = ({players, refreshData}) => {
   const [formData, setFormData] = useState({
@@ -15,6 +71,7 @@ const GameRecorder = ({players, refreshData}) => {
   });
 
   const [errorMessage, setErrorMessage] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const addGame = async (e) => {
     e.preventDefault();
@@ -45,6 +102,7 @@ const GameRecorder = ({players, refreshData}) => {
         "black_defense": "",
         "black_score": 0
       });
+      setSnackbarOpen(true);
     } catch (e) {
       setErrorMessage(e.message);
     }
@@ -60,62 +118,60 @@ const GameRecorder = ({players, refreshData}) => {
     }
   }
 
-  const onDropdownChange = (e) => {
+  const onFormChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  const PlayersDropdown = ({name, id}) => {
-    const selectedPlayers = new Set([
-      formData.yellow_offense,
-      formData.yellow_defense,
-      formData.black_offense,
-      formData.black_defense
-    ])
-    return (
-      <select name={name} id={id} onChange={onDropdownChange} value={formData[name]} required>
-        <option value="" disabled>Please choose a player</option>
-        {players.map(p => {
-          return (
-            <option key={p.id} value={p.id} disabled={selectedPlayers.has(p.id)}>{p.name}</option>
-          )
-        })}
-      </select>
-    )
-  }
-
   return (
-    <div className={styles.gameCrud}>
-      {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-      <form onSubmit={addGame} className={styles.gameForm}>
-        <div className={styles.gameInfo}>
-          <div className={styles.teamForm}>
-            <label htmlFor="yellow_offense">Yellow Offense: </label>
-            <PlayersDropdown name="yellow_offense" id="yellow_offense" />
+    <>
+      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+      <Container component="form" onSubmit={addGame}>
+        <Grid container spacing={2}>
+          <Grid size={{xs: 12, sm: 6}}>
+            <PlayersSelect fieldName="yellow_offense" label="Yellow Offense" formData={formData} onFormChange={onFormChange} players={players} />
+            <PlayersSelect fieldName="yellow_defense" label="Yellow Defense" formData={formData} onFormChange={onFormChange} players={players} />
+            <ScoreField fieldName="yellow_score" label="Yellow Score" formData={formData} onFormChange={onFormChange} />
+          </Grid>
+          <Grid size={{xs: 12, sm: 6}}>
+            <PlayersSelect fieldName="black_offense" label="Black Offense" formData={formData} onFormChange={onFormChange} players={players} />
+            <PlayersSelect fieldName="black_defense" label="Black Defense" formData={formData} onFormChange={onFormChange} players={players} />
+            <ScoreField fieldName="black_score" label="Black Score" formData={formData} onFormChange={onFormChange} />
+          </Grid>
+        </Grid>
 
-            <label htmlFor="yellow_defense">Yellow Defense: </label>
-            <PlayersDropdown name="yellow_defense" id="yellow_defense" />
+        <Grid container spacing={2} sx={{ marginTop: 2 }}>
+          <Grid size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ flexGrow: 1 }}
+            >
+              Add Game
+            </Button>
+          </Grid>
+          <Grid size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
+            <Button
+              onClick={deleteGame}
+              variant="outlined"
+              sx={{ flexGrow: 1 }}
+            >
+              Delete Last Game
+            </Button>
+          </Grid>
+        </Grid>
+      </Container>
 
-            <label htmlFor="yellow_score">Yellow Score: </label>
-            <input type="number" id="yellow_score" name="yellow_score" onChange={onDropdownChange} value={formData.yellow_score} required />
-          </div>
-
-          <div className={styles.teamForm}>
-            <label htmlFor="black_offense">Black Offense: </label>
-            <PlayersDropdown name="black_offense" id="black_offense" />
-
-            <label htmlFor="black_defense">Black Defense: </label>
-            <PlayersDropdown name="black_defense" id="black_defense" />
-
-            <label htmlFor="black_score">Black Score: </label>
-            <input type="number" id="black_score" name="black_score" onChange={onDropdownChange} value={formData.black_score} required />
-          </div>
-        </div>
-
-        <button type="submit" className={styles.addButton}>Add Game</button>
-      </form>
-
-      <button onClick={deleteGame} className={styles.deleteButton}>Delete Last Game</button>
-    </div>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+          Game submitted!
+        </MuiAlert>
+      </Snackbar>
+    </>
   )
 };
 

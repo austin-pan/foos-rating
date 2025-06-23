@@ -1,7 +1,12 @@
-const ColoredPlayerName = ({playerId, playerIdToPlayer}) => {
+const ColoredPlayerName = ({player, override = null}) => {
+  let color = player.color;
+  if (override) {
+    console.log(override);
+    color = override;
+  }
   return (
-    <span style={{"color": playerIdToPlayer[playerId].color}}>
-      {playerIdToPlayer[playerId].name}
+    <span style={{"color": color}}>
+      {player.name}
     </span>
   )
 }

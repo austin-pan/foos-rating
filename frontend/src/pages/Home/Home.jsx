@@ -13,6 +13,7 @@ import TimeSeries from "../../db/TimeSeries.js";
 import Players from "../../db/Players.js";
 
 import styles from "./Home.module.scss";
+import Container from "@mui/material/Container";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -58,7 +59,7 @@ const Home = () => {
 
   if (error) return <ErrorPage />;
   return (
-    <div className={styles.content}>
+    <Container maxWidth="md" sx={{marginBottom: 20}}>
       <h1>Leaderboard</h1>
       {
         isLoading ?
@@ -90,7 +91,7 @@ const Home = () => {
         <LoadingIcon /> :
         <PlayerForm players={players} refreshData={refreshData} />
       }
-    </div>
+    </Container>
   )
 }
 

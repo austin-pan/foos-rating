@@ -22,61 +22,61 @@ const RecentGames = ({games, players}) => {
   }
 
   return (
-    <TableContainer
-      component={Paper}
-      sx={{
-        maxHeight: '400px',
-        maxWidth: '650px',
-        overflowY: 'auto',
-        marginTop: '16px',
-        marginBottom: '16px'
-      }}>
-      <Table
+    <Paper elevation={3}>
+      <TableContainer
         sx={{
-          minWidth: '550px',
-          '& .MuiTableCell-root': {
-            padding: '8px 16px',
-            fontSize: '0.875rem'
-          }
-        }}
-        stickyHeader
-        size="small"
-        aria-label="match history table"
-      >
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Yellow Offense</TableCell>
-            <TableCell>Yellow Defense</TableCell>
-            <TableCell>Yellow Score</TableCell>
-            <TableCell>Black Score</TableCell>
-            <TableCell>Black Offense</TableCell>
-            <TableCell>Black Defense</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {games.map((game) => (
-            <TableRow key={game.id}>
-              <TableCell>{new Date(game.date).toLocaleDateString("en-US", { timeZone: 'UTC' })}</TableCell>
-              <TableCell>
-                <ColoredPlayerName playerId={game.yellow_offense} playerIdToPlayer={playerIdToPlayer} />
-              </TableCell>
-              <TableCell>
-                <ColoredPlayerName playerId={game.yellow_defense} playerIdToPlayer={playerIdToPlayer} />
-              </TableCell>
-              <TableCell><GameScore score={game.yellow_score} otherScore={game.black_score} /></TableCell>
-              <TableCell><GameScore score={game.black_score} otherScore={game.yellow_score} /></TableCell>
-              <TableCell>
-                <ColoredPlayerName playerId={game.black_offense} playerIdToPlayer={playerIdToPlayer} />
-              </TableCell>
-              <TableCell>
-                <ColoredPlayerName playerId={game.black_defense} playerIdToPlayer={playerIdToPlayer} />
-              </TableCell>
+          maxHeight: '400px',
+          overflowY: 'auto',
+          marginTop: '16px',
+          marginBottom: '16px'
+        }}>
+        <Table
+          sx={{
+            minWidth: '550px',
+            '& .MuiTableCell-root': {
+              padding: '8px 16px',
+              fontSize: '0.875rem'
+            }
+          }}
+          stickyHeader
+          size="small"
+          aria-label="match history table"
+        >
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell>Yellow Offense</TableCell>
+              <TableCell>Yellow Defense</TableCell>
+              <TableCell>Yellow Score</TableCell>
+              <TableCell>Black Score</TableCell>
+              <TableCell>Black Offense</TableCell>
+              <TableCell>Black Defense</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {games.map((game) => (
+              <TableRow key={game.id}>
+                <TableCell>{new Date(game.date).toLocaleDateString("en-US", { timeZone: 'UTC' })}</TableCell>
+                <TableCell>
+                  <ColoredPlayerName player={playerIdToPlayer[game.yellow_offense]} />
+                </TableCell>
+                <TableCell>
+                  <ColoredPlayerName player={playerIdToPlayer[game.yellow_defense]} />
+                </TableCell>
+                <TableCell><GameScore score={game.yellow_score} otherScore={game.black_score} /></TableCell>
+                <TableCell><GameScore score={game.black_score} otherScore={game.yellow_score} /></TableCell>
+                <TableCell>
+                  <ColoredPlayerName player={playerIdToPlayer[game.black_offense]} />
+                </TableCell>
+                <TableCell>
+                  <ColoredPlayerName player={playerIdToPlayer[game.black_defense]} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Paper>
   );
 }
 

@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 
 import styles from "./RatingGraph.module.scss";
+import Paper from "@mui/material/Paper";
 
 const Delta = ({value}) => {
   const color = value > 0 ? "darkgreen" : "darkred";
@@ -16,10 +17,10 @@ const Delta = ({value}) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={styles.customTooltip}>
+      <Paper elevation={3} sx={{padding: 2, backgroundColor: "white", borderRadius: 2, opacity: 0.8}}>
         <div className={styles.tooltipLabel}>{new Date(label).toLocaleDateString("en-US", { timeZone: "UTC" })}</div>
         <div className={styles.tooltipEntries}>
-          {payload.map(entry => {
+          {payload.sort((a, b) => a.value < b.value).map(entry => {
             const delta = entry.payload[`${entry.name}_delta`]
             return (
               <Fragment key={entry.name}>
@@ -30,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             );
           })}
         </div>
-      </div>
+      </Paper>
     );
   }
 
@@ -54,7 +55,7 @@ const RatingGraph = ({data, players}) => {
           dataKey="date"
           type="number"
           tickFormatter={time => new Date(time).toLocaleDateString("en-US", { timeZone: "UTC" })}
-          domain={['dataMin', 'dataMax']}
+          domain={['dataMin - 500000000', 'dataMax + 700000000']}
           scale="linear" />
         <YAxis type="number" domain={['dataMin - 20', 'dataMax + 20']} scale="linear" />
         <Tooltip content={<CustomTooltip />} />

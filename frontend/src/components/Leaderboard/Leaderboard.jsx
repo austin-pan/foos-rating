@@ -9,79 +9,59 @@ import Paper from '@mui/material/Paper';
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 
 const Leaderboard = ({players}) => {
-  const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
+  const experiencedPlayers = [...players].filter(player => player.game_count > 10).sort((a, b) => b.rating - a.rating);
+  const newPlayers = [...players].filter(player => player.game_count <= 10).sort((a, b) => b.rating - a.rating);
+  const sortedPlayers = [...experiencedPlayers, ...newPlayers];
   const playerIdToPlayer = {};
   for (const player of players) {
     playerIdToPlayer[player.id] = player;
   }
 
   return (
-    <TableContainer
-      component={Paper}
-      sx={{
-        maxHeight: '300px',
-        maxWidth: '500px',
-        overflowY: 'auto',
-        marginTop: '16px',
-        marginBottom: '16px'
-      }}>
-      <Table
+    <Paper elevation={3}>
+      <TableContainer
         sx={{
-          minWidth: 200,
-          '& .MuiTableCell-root': {
-            padding: '8px 16px',
-            fontSize: '0.875rem'
-          }
-        }}
-        stickyHeader
-        size="small"
-        aria-label="match history table"
-      >
-        <TableHead>
-          <TableRow>
-            <TableCell>Rank</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Rating</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {sortedPlayers.map((p, i) => {
-            return (
-              <TableRow key={p.id}>
-                <TableCell>{i + 1}</TableCell>
-                <TableCell><ColoredPlayerName playerId={p.id} playerIdToPlayer={playerIdToPlayer} /></TableCell>
-                <TableCell>{p.rating}</TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          maxHeight: '300px',
+          overflowY: 'auto',
+          marginTop: 2,
+          marginBottom: 2
+        }}>
+        <Table
+          sx={{
+            minWidth: 200,
+            '& .MuiTableCell-root': {
+              padding: '8px 16px',
+              fontSize: '0.875rem'
+            }
+          }}
+          stickyHeader
+          size="small"
+          aria-label="match history table"
+        >
+          <TableHead>
+            <TableRow>
+              <TableCell>Rank</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Rating</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedPlayers.map((player, i) => {
+              return (
+                <TableRow key={player.id} sx={{opacity: player.game_count > 10 ? 1 : 0.4}}>
+                  <TableCell>{i + 1}</TableCell>
+                  <TableCell>
+                    <ColoredPlayerName player={player} />
+                  </TableCell>
+                  <TableCell>{player.rating}</TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Paper>
   )
-
-  //   <div className={styles.leaderboard}>
-  //     <table>
-  //       <thead>
-  //         <tr>
-  //           <th>Rank</th>
-  //           <th>Name</th>
-  //           <th>Rating</th>
-  //         </tr>
-  //       </thead>
-  //       <tbody>
-  //         {sortedPlayers.map((p, i) => {
-  //           return (
-  //             <tr key={p.id}>
-  //               <td>{i + 1}</td>
-  //               <td><ColoredPlayerName playerId={p.id} playerIdToPlayer={playerIdToPlayer} /></td>
-  //               <td>{p.rating}</td>
-  //             </tr>
-  //           )
-  //         })}
-  //       </tbody>
-  //     </table>
-  //   </div>
-  // )
 };
 
 export default Leaderboard;

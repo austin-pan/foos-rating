@@ -1,8 +1,12 @@
 import { useState } from "react";
 
-import Players from "../../db/Players.js";
+import Container from "@mui/material/Container";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+import Grid from "@mui/material/Grid";
 
-import styles from "./PlayerForm.module.scss";
+import Players from "../../db/Players.js";
 
 const PlayerRecorder = ({players, refreshData}) => {
   const [formData, setFormData] = useState({name: ""});
@@ -29,16 +33,29 @@ const PlayerRecorder = ({players, refreshData}) => {
   }
 
   return (
-    <form onSubmit={addPlayer} className={styles.playerForm}>
-      {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+    <Container component="form" onSubmit={addPlayer}>
+      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
 
-      <div>
-        <label htmlFor="name">Name: </label>
-        <input type="text" id="name" name="name" onChange={onChange} value={formData.name} autoComplete="off" required />
-      </div>
+      <Grid container spacing={2} alignItems="center">
+        <Grid size={{xs: 12, sm: 8}}>
+          <TextField
+            label="Name"
+            name="name"
+            onChange={onChange}
+            value={formData.name}
+            autoComplete="off"
+            required
+            size="small"
+            margin="dense"
+            fullWidth
+          />
+        </Grid>
+        <Grid size={{xs: 12, sm: 4}} sx={{display: "flex"}}>
+          <Button type="submit" variant="contained" sx={{ flexGrow: 1 }}>Add Player</Button>
+        </Grid>
+      </Grid>
 
-      <button type="submit">Add Player</button>
-    </form>
+    </Container>
   )
 };
 
