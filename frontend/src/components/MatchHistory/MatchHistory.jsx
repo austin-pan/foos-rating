@@ -5,6 +5,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 
@@ -22,22 +23,15 @@ const RecentGames = ({games, players}) => {
   }
 
   return (
-    <Paper elevation={3}>
+    <Paper elevation={3} sx={{ maxWidth: '550px', margin: 'auto' }}>
       <TableContainer
         sx={{
           maxHeight: '400px',
           overflowY: 'auto',
-          marginTop: '16px',
-          marginBottom: '16px'
+          marginTop: 2,
+          marginBottom: 2
         }}>
         <Table
-          sx={{
-            minWidth: '550px',
-            '& .MuiTableCell-root': {
-              padding: '8px 16px',
-              fontSize: '0.875rem'
-            }
-          }}
           stickyHeader
           size="small"
           aria-label="match history table"
@@ -45,35 +39,33 @@ const RecentGames = ({games, players}) => {
           <TableHead>
             <TableRow>
               <TableCell>Date</TableCell>
-              <TableCell>Yellow Offense</TableCell>
-              <TableCell>Yellow Defense</TableCell>
-              <TableCell>Yellow Score</TableCell>
-              <TableCell>Black Score</TableCell>
-              <TableCell>Black Offense</TableCell>
-              <TableCell>Black Defense</TableCell>
+              <TableCell>Yellow</TableCell>
+              <TableCell>Score</TableCell>
+              <TableCell>Black</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {games.map((game) => (
               <TableRow key={game.id}>
-                <TableCell>{new Date(game.date).toLocaleDateString("en-US")}</TableCell>
                 <TableCell>
-                  <ColoredPlayerName player={playerIdToPlayer[game.yellow_offense]} />
+                  {new Date(game.date).toLocaleDateString("en-US")}
                 </TableCell>
                 <TableCell>
-                  <ColoredPlayerName player={playerIdToPlayer[game.yellow_defense]} />
+                  <Stack direction="column" spacing={1}>
+                    <ColoredPlayerName player={playerIdToPlayer[game.yellow_offense]} />
+                    <ColoredPlayerName player={playerIdToPlayer[game.yellow_defense]} />
+                  </Stack>
                 </TableCell>
                 <TableCell>
                   <GameScore score={game.yellow_score} otherScore={game.black_score} />
-                </TableCell>
-                <TableCell>
+                  <span> - </span>
                   <GameScore score={game.black_score} otherScore={game.yellow_score} />
                 </TableCell>
                 <TableCell>
-                  <ColoredPlayerName player={playerIdToPlayer[game.black_offense]} />
-                </TableCell>
-                <TableCell>
-                  <ColoredPlayerName player={playerIdToPlayer[game.black_defense]} />
+                  <Stack direction="column" spacing={1}>
+                    <ColoredPlayerName player={playerIdToPlayer[game.black_offense]} />
+                    <ColoredPlayerName player={playerIdToPlayer[game.black_defense]} />
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
