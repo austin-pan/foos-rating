@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <Paper elevation={3} sx={{padding: 2, backgroundColor: "white", borderRadius: 2, opacity: 0.8}}>
         <div className={styles.tooltipLabel}>{new Date(label).toLocaleDateString("en-US", { timeZone: "UTC" })}</div>
         <div className={styles.tooltipEntries}>
-          {payload.sort((a, b) => a.value < b.value).map(entry => {
+          {payload.sort((a, b) => a.value < b.value ? 1 : -1).map(entry => {
             const delta = entry.payload[`${entry.name}_delta`]
             return (
               <Fragment key={entry.name}>
