@@ -188,7 +188,9 @@ def read_ratings():
             key=lambda dated_timeseries: dated_timeseries[0]
         )
         for date, timeseries_points in chronological_timeseries:
-            timeseries_result: dict[str, Any] = {"date": str(date)}
+            timeseries_result: dict[str, Any] = {
+                "date": datetime.datetime.combine(date, datetime.time(0, 0, 0))
+            }
             for tp in timeseries_points:
                 timeseries_result[tp.name] = round(tp.rating)
 

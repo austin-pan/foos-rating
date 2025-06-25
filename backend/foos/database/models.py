@@ -4,7 +4,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 ## Game models
 class GameBase(SQLModel):
-    date: datetime.datetime = datetime.datetime.now()
+    date: datetime.datetime = Field(default_factory=datetime.datetime.now)
     yellow_offense: str = Field(foreign_key="player.id")
     yellow_defense: str = Field(foreign_key="player.id")
     yellow_score: int
