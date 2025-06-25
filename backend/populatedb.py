@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 
-from sqlmodel import Session, select
+from sqlmodel import Session, delete
 import pandas as pd
 from tqdm import tqdm
 
@@ -83,15 +83,9 @@ def populate_db():
 
 def truncate_tables():
     with Session(engine) as session:
-        timeseries_points = session.exec(select(TimeSeries)).all()
-        for ts in timeseries_points:
-            session.delete(ts)
-        games = session.exec(select(Game)).all()
-        for g in games:
-            session.delete(g)
-        players = session.exec(select(Player)).all()
-        for p in players:
-            session.delete(p)
+        session.exec(delete(TimeSeries))
+        session.exec(delete(Game))
+        session.exec(delete(Player))
         session.commit()
 
 

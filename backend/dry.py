@@ -21,13 +21,13 @@ def main():
     player_id_to_rating = { p.lower().replace(" ", "_"): rating.BASE_RATING for p in players }
     for _, row in games.iterrows():
         game = models.Game(
-            date = datetime.strptime(row["date"], "%m/%d/%y"),
-            yellow_offense = row["yellow_front"],
-            yellow_defense = row["yellow_back"],
-            yellow_score = row["yellow_score"],
-            black_offense = row["black_front"],
-            black_defense = row["black_back"],
-            black_score = row["black_score"]
+            date = datetime.strptime(row[["date"]].item(), "%m/%d/%y"),
+            yellow_offense = row[["yellow_front"]].item(),
+            yellow_defense = row[["yellow_back"]].item(),
+            yellow_score = row[["yellow_score"]].item(),
+            black_offense = row[["black_front"]].item(),
+            black_defense = row[["black_back"]].item(),
+            black_score = row[["black_score"]].item()
         )
         game_player_ids = [
             game.yellow_offense,

@@ -52,9 +52,15 @@ const ScoreField = ({fieldName, label, formData, onFormChange}) => {
       name={fieldName}
       value={formData[fieldName]}
       onChange={onFormChange}
-      type="phone"
+      type="number"
+      slotProps={{
+        inputLabel: {
+          shrink: true
+        }
+      }}
       size="small"
       margin="dense"
+      autoComplete="off"
       required
     />
   )
@@ -90,8 +96,11 @@ const GameRecorder = ({players, refreshData}) => {
       if (isNaN(Number(formData.yellow_score)) || isNaN(Number(formData.black_score))) {
         throw new Error("Scores must be numbers");
       }
-      if (formData.yellow_score == 0 && formData.black_score == 0) {
+      if (Number(formData.yellow_score) == 0 && Number(formData.black_score) == 0) {
         throw new Error("Both teams' scores cannot be 0")
+      }
+      if (Number(formData.yellow_score) == Number(formData.black_score)) {
+        throw new Error("Scores cannot be the same");
       }
 
       await Games.addGame(formData);
