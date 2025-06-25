@@ -56,15 +56,19 @@ const RecentGames = ({games, players}) => {
           <TableBody>
             {games.map((game) => (
               <TableRow key={game.id}>
-                <TableCell>{new Date(game.date).toLocaleDateString("en-US", { timeZone: 'UTC' })}</TableCell>
+                <TableCell>{new Date(game.date).toLocaleDateString("en-US")}</TableCell>
                 <TableCell>
                   <ColoredPlayerName player={playerIdToPlayer[game.yellow_offense]} />
                 </TableCell>
                 <TableCell>
                   <ColoredPlayerName player={playerIdToPlayer[game.yellow_defense]} />
                 </TableCell>
-                <TableCell><GameScore score={game.yellow_score} otherScore={game.black_score} /></TableCell>
-                <TableCell><GameScore score={game.black_score} otherScore={game.yellow_score} /></TableCell>
+                <TableCell>
+                  <GameScore score={game.yellow_score} otherScore={game.black_score} />
+                </TableCell>
+                <TableCell>
+                  <GameScore score={game.black_score} otherScore={game.yellow_score} />
+                </TableCell>
                 <TableCell>
                   <ColoredPlayerName player={playerIdToPlayer[game.black_offense]} />
                 </TableCell>
