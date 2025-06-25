@@ -52,7 +52,7 @@ const ScoreField = ({fieldName, label, formData, onFormChange}) => {
       name={fieldName}
       value={formData[fieldName]}
       onChange={onFormChange}
-      type="number"
+      type="phone"
       size="small"
       margin="dense"
       required
@@ -87,6 +87,9 @@ const GameRecorder = ({players, refreshData}) => {
       if (participants.length != new Set(participants).size) {
         throw new Error("All positions must be filled by different players");
       }
+      if (isNaN(Number(formData.yellow_score)) || isNaN(Number(formData.black_score))) {
+        throw new Error("Scores must be numbers");
+      }
       if (formData.yellow_score == 0 && formData.black_score == 0) {
         throw new Error("Both teams' scores cannot be 0")
       }
@@ -95,11 +98,8 @@ const GameRecorder = ({players, refreshData}) => {
       refreshData();
       setErrorMessage(null);
       setFormData({
-        "yellow_offense": "",
-        "yellow_defense": "",
+        ...formData,
         "yellow_score": 0,
-        "black_offense": "",
-        "black_defense": "",
         "black_score": 0
       });
       setSnackbarOpen(true);
