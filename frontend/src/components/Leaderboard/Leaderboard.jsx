@@ -18,7 +18,7 @@ const Leaderboard = ({players}) => {
   }
 
   return (
-    <Paper elevation={3}>
+    <Paper elevation={3} sx={{ maxWidth: '550px', margin: 'auto' }}>
       <TableContainer
         sx={{
           maxHeight: '300px',
