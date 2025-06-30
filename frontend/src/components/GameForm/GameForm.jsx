@@ -10,13 +10,12 @@ import MuiAlert from "@mui/material/Alert";
 
 import Games from "../../db/Games.js";
 
+const positionIds = ["yellow_offense", "yellow_defense", "black_offense", "black_defense"];
+
 const PlayersSelect = ({fieldName, label, formData, onFormChange, players}) => {
-  const selectedPlayers = new Set([
-    formData.yellow_offense,
-    formData.yellow_defense,
-    formData.black_offense,
-    formData.black_defense
-  ]);
+  const otherPositionIds = positionIds.filter(p => p != fieldName);
+  const selectedPlayers = new Set(otherPositionIds.map(p => formData[p]));
+
   return (
     <TextField
       select
@@ -37,7 +36,7 @@ const PlayersSelect = ({fieldName, label, formData, onFormChange, players}) => {
       <option value="" disabled></option>
       {players.map(p => {
         return (
-          <option key={p.id} value={p.id} disabled={selectedPlayers.has(p.id)}>{p.name}</option>
+          <option key={p.id} value={p.id}>{selectedPlayers.has(p.id) ? "* " : ""}{p.name}</option>
         )
       })}
     </TextField>
@@ -131,19 +130,29 @@ const GameRecorder = ({players, refreshData}) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
+  const onPlayerChange = (e) => {
+    const { name: selectedPositionId, value: selectedPlayer } = e.target;
+    const occupiedPositionId = positionIds.find(posId => formData[posId] === selectedPlayer);
+    if (occupiedPositionId) {
+      setFormData({ ...formData, [occupiedPositionId]: formData[selectedPositionId], [selectedPositionId]: formData[occupiedPositionId] });
+    } else {
+      setFormData({ ...formData, [selectedPositionId]: selectedPlayer });
+    }
+  }
+
   return (
     <>
       {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
       <Container component="form" onSubmit={addGame}>
         <Grid container spacing={2}>
           <Grid size={{xs: 12, sm: 6}}>
-            <PlayersSelect fieldName="yellow_offense" label="Yellow Offense" formData={formData} onFormChange={onFormChange} players={players} />
-            <PlayersSelect fieldName="yellow_defense" label="Yellow Defense" formData={formData} onFormChange={onFormChange} players={players} />
+            <PlayersSelect fieldName="yellow_offense" label="Yellow Offense" formData={formData} onFormChange={onPlayerChange} players={players} />
+            <PlayersSelect fieldName="yellow_defense" label="Yellow Defense" formData={formData} onFormChange={onPlayerChange} players={players} />
             <ScoreField fieldName="yellow_score" label="Yellow Score" formData={formData} onFormChange={onFormChange} />
           </Grid>
           <Grid size={{xs: 12, sm: 6}}>
-            <PlayersSelect fieldName="black_offense" label="Black Offense" formData={formData} onFormChange={onFormChange} players={players} />
-            <PlayersSelect fieldName="black_defense" label="Black Defense" formData={formData} onFormChange={onFormChange} players={players} />
+            <PlayersSelect fieldName="black_offense" label="Black Offense" formData={formData} onFormChange={onPlayerChange} players={players} />
+            <PlayersSelect fieldName="black_defense" label="Black Defense" formData={formData} onFormChange={onPlayerChange} players={players} />
             <ScoreField fieldName="black_score" label="Black Score" formData={formData} onFormChange={onFormChange} />
           </Grid>
         </Grid>
