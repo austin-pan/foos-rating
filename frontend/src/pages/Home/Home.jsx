@@ -60,9 +60,11 @@ const Home = () => {
         <>
           <SeasonSelector
             seasonId={seasonId}
-            onChange={(e) => {
+            onChange={async (e) => {
               setSeasonId(e.target.value);
-              refreshData(setGames, setTimeSeries, setPlayers, e.target.value);
+              setIsLoading(true);
+              await refreshData(setGames, setTimeSeries, setPlayers, e.target.value);
+              setIsLoading(false);
             }}
           />
           <Leaderboard players={players} seasonId={seasonId} />
