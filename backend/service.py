@@ -36,7 +36,14 @@ def on_startup():
 @app.post("/games/", response_model=models.GamePublic)
 def create_game(game: models.GameCreate):
     with Session(db.engine) as session:
-        db_game = models.Game.model_validate(game)
+        current_season = session.exec(
+            select(models.Season)
+            .where(models.Season.active)
+        ).first()
+        if not current_season or not current_season.id:
+            raise HTTPException(status_code=400, detail="No active season")
+
+        db_game = models.Game.model_validate(game, update={"season_id": current_season.id})
         session.add(db_game)
 
         game_player_ids = [
@@ -45,7 +52,9 @@ def create_game(game: models.GameCreate):
             db_game.black_offense,
             db_game.black_defense
         ]
-        player_id_to_current_rating = rating.get_player_ratings(session, game_player_ids)
+        player_id_to_current_rating = rating.get_player_ratings(
+            session, game_player_ids, current_season.id
+        )
         player_id_to_updated_rating = rating.update_ratings(db_game, player_id_to_current_rating)
         for player_id, updated_rating in player_id_to_updated_rating.items():
             win = player_id_to_current_rating[player_id] < updated_rating
@@ -64,10 +73,11 @@ def create_game(game: models.GameCreate):
 
 
 @app.get("/games/", response_model=list[models.GamePublic])
-def read_games(offset: int = 0, limit: int = Query(default=20, le=100)):
+def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, le=100)):
     with Session(db.engine) as session:
         games = session.exec(
             select(models.Game)
+            .where(models.Game.season_id == season_id)
             .order_by(desc(col(models.Game.date)), desc(col(models.Game.id)))
             .limit(limit)
             .offset(offset)
@@ -101,15 +111,15 @@ def recolor_players():
 
 
 @app.get("/players/", response_model=list[models.RatedPlayerPublic])
-def read_players():
+def read_players(season_id: int):
     with Session(db.engine) as session:
         db_players = session.exec(
             select(models.Player)
             .order_by(col(models.Player.name))
         ).all()
         player_ids = [p.id for p in db_players]
-        player_id_to_rating = rating.get_player_ratings(session, player_ids)
-        player_id_to_game_count = rating.get_player_game_counts(session, player_ids)
+        player_id_to_rating = rating.get_player_ratings(session, player_ids, season_id)
+        player_id_to_game_count = rating.get_player_game_counts(session, player_ids, season_id)
         # Account for first-time players
         for player_id in player_ids:
             if player_id not in player_id_to_rating:
@@ -143,7 +153,7 @@ def add_player(player: models.PlayerCreate):
 
 
 @app.get("/timeseries/", response_model=list[dict[str, Any]])
-def read_ratings():
+def read_ratings(season_id: int):
     with Session(db.engine) as session:
         # Select the ratings each participating player ended at the end of each day
         ranked_timeseries = select(
@@ -158,7 +168,10 @@ def read_ratings():
         ).select_from( # type: ignore
             join(models.TimeSeries, models.Game)
             .join(models.Player, col(models.TimeSeries.player_id) == col(models.Player.id))
+        ).where(
+            models.Game.season_id == season_id
         ).subquery()
+
         eod_timeseries = (
             select(
                 ranked_timeseries.c.date,
@@ -201,6 +214,12 @@ def read_ratings():
             timeseries_results.append(timeseries_result)
 
         return timeseries_results
+
+
+@app.get("/seasons/current", response_model=models.Season)
+def get_current_season():
+    with Session(db.engine) as session:
+        return session.exec(select(models.Season).where(models.Season.active)).one()
 
 
 @app.get("/")

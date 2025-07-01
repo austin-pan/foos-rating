@@ -23,7 +23,7 @@ class FoosGame:
         self.team_b = team_b
 
 
-def get_player_ratings(session: Session, player_ids: list[str]) -> dict[str, float]:
+def get_player_ratings(session: Session, player_ids: list[str], season_id: int) -> dict[str, float]:
     ranked_timeseries = select(
         models.TimeSeries.player_id,
         models.TimeSeries.rating,
@@ -31,8 +31,12 @@ def get_player_ratings(session: Session, player_ids: list[str]) -> dict[str, flo
             partition_by=col(models.TimeSeries.player_id),
             order_by=desc(col(models.TimeSeries.game_id))
         ).label("game_num")
+    ).join(
+        models.Game
     ).where(
-        col(models.TimeSeries.player_id).in_(player_ids)
+        models.Game.id == models.TimeSeries.game_id,
+        col(models.TimeSeries.player_id).in_(player_ids),
+        models.Game.season_id == season_id
     ).subquery()
     latest_ratings_query = (
         select(
@@ -43,16 +47,23 @@ def get_player_ratings(session: Session, player_ids: list[str]) -> dict[str, flo
         .where(ranked_timeseries.c.game_num == 1)
     )
     latest_ratings: dict[str, float] = dict(session.exec(latest_ratings_query).all())
+    for player_id in player_ids:
+        if player_id not in latest_ratings:
+            latest_ratings[player_id] = BASE_RATING
     return latest_ratings
 
 
-def get_player_game_counts(session: Session, player_ids: list[str]) -> dict[str, int]:
+def get_player_game_counts(session: Session, player_ids: list[str], season_id: int) -> dict[str, int]:
     game_counts_query = (
         select(
             models.TimeSeries.player_id,
             func.count(models.TimeSeries.game_id).label("game_count")
         )
-        .where(col(models.TimeSeries.player_id).in_(player_ids))
+        .join(models.Game)
+        .where(
+            col(models.TimeSeries.player_id).in_(player_ids),
+            models.Game.season_id == season_id
+        )
         .group_by(models.TimeSeries.player_id)
     )
     game_counts: dict[str, int] = dict(session.exec(game_counts_query).all())

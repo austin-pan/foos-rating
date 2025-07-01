@@ -11,6 +11,7 @@ class GameBase(SQLModel):
     black_offense: str = Field(foreign_key="player.id")
     black_defense: str = Field(foreign_key="player.id")
     black_score: int
+    season_id: int | None = Field(default=None, foreign_key="season.id", ondelete="SET NULL")
 
 
 class GameCreate(GameBase):
@@ -25,6 +26,7 @@ class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     timeseries: list["TimeSeries"] = Relationship(back_populates="game", cascade_delete=True)
+    season: "Season" = Relationship(back_populates="games")
 
 
 ## Player models
@@ -76,7 +78,11 @@ class MinimalTimeSeriesPoint:
         return f"{self.date} | {self.name}: {self.rating}"
 
 ## Season models
-class Season(SQLModel):
+class Season(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    start_date: datetime.datetime
-    end_date: datetime.datetime
+    name: str
+    start_date: datetime.date
+    end_date: datetime.date
+    active: bool
+
+    games: list["Game"] = Relationship(back_populates="season")

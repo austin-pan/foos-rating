@@ -8,6 +8,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 const GameScore = ({score, otherScore}) => {
   if (score > otherScore) {
@@ -16,7 +18,15 @@ const GameScore = ({score, otherScore}) => {
   return <span>{score}</span>
 }
 
-const RecentGames = ({games, players}) => {
+const MatchHistory = ({games, players}) => {
+  if (games.length == 0) {
+    return (
+      <Box display="flex" justifyContent="center">
+        <Typography variant="body">No matches yet!</Typography>
+      </Box>
+    )
+  }
+
   const playerIdToPlayer = {};
   for (const player of players) {
     playerIdToPlayer[player.id] = player;
@@ -76,4 +86,4 @@ const RecentGames = ({games, players}) => {
   );
 }
 
-export default RecentGames;
+export default MatchHistory;

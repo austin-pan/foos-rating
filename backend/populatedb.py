@@ -1,54 +1,82 @@
 import sys
-from datetime import datetime
+import datetime
 
-from sqlmodel import Session, delete
+from sqlmodel import Session, SQLModel
 import pandas as pd
 from tqdm import tqdm
 
 from foos import color
 from foos.database import engine, create_db_and_tables
-from foos.database.models import Game, Player, TimeSeries
+from foos.database.models import Game, Player, Season, TimeSeries
 from foos import rating
 
 
 def populate_db():
-    game_data = pd.read_csv(sys.argv[1])
+    game_data = pd.read_csv(sys.argv[1]).iloc[::-1]
+    game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601")
+
     player_data: list[str] = pd.concat(
         [
-            game_data["yellow_front"],
-            game_data["yellow_back"],
-            game_data["black_front"],
-            game_data["black_back"]
+            game_data["yellow_offense"],
+            game_data["yellow_defense"],
+            game_data["black_offense"],
+            game_data["black_defense"]
         ]
     ).unique().tolist()
 
+    seasons = [
+        {
+            "name": "1",
+            "start_date": datetime.date(2024, 1, 1),
+            "end_date": datetime.date(2024, 6, 30),
+            "active": False
+        },
+        {
+            "name": "2",
+            "start_date": datetime.date(2024, 7, 1),
+            "end_date": datetime.date(2024, 12, 31),
+            "active": True
+        }
+    ]
+
     with Session(engine) as session:
+        seasons_to_upload = []
+        for season in seasons:
+            db_season = Season(
+                name=season["name"],
+                start_date=season["start_date"],
+                end_date=season["end_date"],
+                active=season["active"]
+            )
+            seasons_to_upload.append(db_season)
+        session.bulk_save_objects(seasons_to_upload)
+        session.commit()
+
+        players_to_upload = []
         player_id_to_rating: dict[str, float] = {}
         for player in player_data:
             player_id = player.lower().replace(" ", "_")
             db_player = Player(
                 id=player_id,
-                name=player,
+                name=player.capitalize(),
                 color=color.get_random_dark_color()
             )
-            session.add(db_player)
-            session.commit()
-
+            players_to_upload.append(db_player)
             player_id_to_rating[player_id] = rating.BASE_RATING
+        session.bulk_save_objects(players_to_upload)
+        session.commit()
 
-        game_data["yellow_front"] = game_data["yellow_front"].str.lower().replace(" ", "_")
-        game_data["yellow_back"] = game_data["yellow_back"].str.lower().replace(" ", "_")
-        game_data["black_front"] = game_data["black_front"].str.lower().replace(" ", "_")
-        game_data["black_back"] = game_data["black_back"].str.lower().replace(" ", "_")
+        timeseries_to_upload = []
         for _, game in tqdm(game_data.iterrows()):
             db_game = Game(
-                date=datetime.strptime(game[["date"]].item(), "%m/%d/%Y"),
-                yellow_offense=game[["yellow_front"]].item(),
-                yellow_defense=game[["yellow_back"]].item(),
+                date=game[["date"]].item(),
+                yellow_offense=game[["yellow_offense"]].item(),
+                yellow_defense=game[["yellow_defense"]].item(),
                 yellow_score=int(game[["yellow_score"]].item()),
-                black_offense=game[["black_front"]].item(),
-                black_defense=game[["black_back"]].item(),
-                black_score=int(game[["black_score"]].item())
+                black_offense=game[["black_offense"]].item(),
+                black_defense=game[["black_defense"]].item(),
+                black_score=int(game[["black_score"]].item()),
+                season_id=int(game[["season_id"]].item())
             )
             session.add(db_game)
             session.commit()
@@ -77,19 +105,12 @@ def populate_db():
                     rating=updated_rating,
                     win=win
                 )
-                session.add(db_timeseries_point)
-            session.commit()
-
-
-def truncate_tables():
-    with Session(engine) as session:
-        session.exec(delete(TimeSeries))
-        session.exec(delete(Game))
-        session.exec(delete(Player))
+                timeseries_to_upload.append(db_timeseries_point)
+        session.bulk_save_objects(timeseries_to_upload, preserve_order=True)
         session.commit()
 
 
 if __name__ == "__main__":
+    SQLModel.metadata.drop_all(engine)
     create_db_and_tables()
-    truncate_tables()
     populate_db()

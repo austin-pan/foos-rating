@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
-const readPlayers = async () => {
-  const response = await fetch(`${API_URL}/players/`, {
+const readPlayers = async (seasonId) => {
+  const response = await fetch(`${API_URL}/players/?season_id=${seasonId}`, {
     mode: "cors"
   });
 

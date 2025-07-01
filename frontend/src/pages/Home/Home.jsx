@@ -12,11 +12,18 @@ import Leaderboard from "../../components/Leaderboard/Leaderboard.jsx";
 import Games from "../../db/Games.js";
 import TimeSeries from "../../db/TimeSeries.js";
 import Players from "../../db/Players.js";
+import Season from "../../db/Season.js";
 
 import styles from "./Home.module.scss";
 import Container from "@mui/material/Container";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const refreshData = async (setGames, setTimeSeries, setPlayers, seasonId) => {
+  setGames(await Games.readGames(seasonId));
+  setTimeSeries(await TimeSeries.readTimeSeries(seasonId));
+  setPlayers(await Players.readPlayers(seasonId));
+}
 
 const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -25,29 +32,14 @@ const Home = () => {
   const [games, setGames] = useState([]);
   const [timeseries, setTimeSeries] = useState([]);
   const [players, setPlayers] = useState([]);
-
-  const refreshData = async () => {
-    setGames(await Games.readGames());
-    setTimeSeries(await TimeSeries.readTimeSeries());
-    setPlayers(await Players.readPlayers());
-  }
-
-  useEffect(() => {
-    const heartbeatKey = setInterval(() => {
-      fetch(`${API_URL}/`, {
-        mode: "cors"
-      });
-    }, 10 * 60 * 1000); // Every 10 minutes
-
-    return () => {
-      clearInterval(heartbeatKey);
-    }
-  }, [])
+  const [seasonId, setSeasonId] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await refreshData();
+        const season = await Season.getCurrentSeason();
+        setSeasonId(season.id);
+        await refreshData(setGames, setTimeSeries, setPlayers, season.id);
       } catch (e) {
         console.log(e);
         setError(e);
@@ -56,41 +48,48 @@ const Home = () => {
       }
     }
     fetchData();
-  }, [])
+  }, []);
 
   if (error) return <ErrorPage />;
   return (
     <Container maxWidth="md" sx={{marginBottom: 20}}>
-      <h1>Leaderboard</h1>
+      <Typography variant="h3" component="h1" marginY={4}>Leaderboard</Typography>
       {
         isLoading ?
         <LoadingIcon /> :
         <>
-          <Leaderboard players={players} />
-          <RatingGraph data={timeseries} players={players} />
+          <SeasonSelector
+            seasonId={seasonId}
+            onChange={(e) => {
+              setSeasonId(e.target.value);
+              refreshData(setGames, setTimeSeries, setPlayers, e.target.value);
+            }}
+          />
+          <Leaderboard players={players} seasonId={seasonId} />
+          <RatingGraph data={timeseries} players={players} seasonId={seasonId} />
         </>
       }
 
-      <h1>Match History</h1>
+      <Typography variant="h3" component="h1" marginY={4}>Match History</Typography>
       {
         isLoading ?
         <LoadingIcon /> :
         <MatchHistory games={games} players={players} />
       }
 
-      <h1>Forms</h1>
-      <h2>Add Game</h2>
+      <Typography variant="h3" component="h1" marginY={4}>Forms</Typography>
+      <Typography variant="h4" component="h2" marginY={4}>Add Game</Typography>
       {
         isLoading ?
         <LoadingIcon /> :
-        <GameForm players={players} refreshData={refreshData} />
+        <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, seasonId)} />
       }
 
-      <h2>Add Player</h2>
+      <Typography variant="h4" component="h2" marginY={4}>Add Player</Typography>
       {
         isLoading ?
         <LoadingIcon /> :
-        <PlayerForm players={players} refreshData={refreshData} />
+        <PlayerForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, seasonId)} />
       }
     </Container>
   )
@@ -125,6 +124,27 @@ const LoadingIcon = () => {
     </Box>
   )
 }
+
+const SeasonSelector = ({ seasonId, onChange }) => {
+  return (
+    <TextField
+      select
+      name="seasonId"
+      value={seasonId}
+      onChange={onChange}
+      slotProps={{
+        select: {
+          native: true
+        }
+      }}
+      size="small"
+      margin="dense"
+    >
+      <option value={1}>Season 1</option>
+      <option value={2}>Season 2</option>
+    </TextField>
+  );
+};
 
 
 const ErrorPage = () => {

@@ -90,7 +90,7 @@ const RatingGraph = ({data, players}) => {
           tickFormatter={time => new Date(time).toLocaleDateString("en-US")}
           domain={['dataMin - 500000000', 'dataMax + 700000000']}
           scale="linear" />
-        <YAxis type="number" domain={['dataMin - 20', 'dataMax + 20']} scale="linear" />
+        <YAxis type="number" domain={[dataMin => Math.min(400, dataMin - 20), dataMax => Math.max(650, dataMax + 20)]} scale="linear" />
         <Tooltip content={<CustomTooltip />} />
       </LineChart>
     </ResponsiveContainer>
