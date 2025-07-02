@@ -45,7 +45,8 @@ class PlayerPublic(PlayerBase):
 
 class RatedPlayerPublic(PlayerPublic):
     rating: float
-    game_count: int
+    probationary: bool
+    win_rate: float
 
 
 class Player(PlayerBase, table=True):

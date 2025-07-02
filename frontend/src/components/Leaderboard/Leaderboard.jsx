@@ -9,8 +9,8 @@ import Paper from '@mui/material/Paper';
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 
 const Leaderboard = ({players}) => {
-  const experiencedPlayers = [...players].filter(player => player.game_count > 10).sort((a, b) => b.rating - a.rating);
-  const newPlayers = [...players].filter(player => player.game_count <= 10).sort((a, b) => b.rating - a.rating);
+  const experiencedPlayers = [...players].filter(player => !player.probationary).sort((a, b) => b.rating - a.rating);
+  const newPlayers = [...players].filter(player => player.probationary).sort((a, b) => b.rating - a.rating);
   const sortedPlayers = [...experiencedPlayers, ...newPlayers];
   const playerIdToPlayer = {};
   for (const player of players) {
@@ -43,17 +43,19 @@ const Leaderboard = ({players}) => {
               <TableCell>Rank</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Rating</TableCell>
+              <TableCell>Win Rate</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sortedPlayers.map((player, i) => {
               return (
-                <TableRow key={player.id} sx={{opacity: player.game_count > 10 ? 1 : 0.4}}>
+                <TableRow key={player.id} sx={{opacity: !player.probationary ? 1 : 0.4}}>
                   <TableCell>{i + 1}</TableCell>
                   <TableCell>
                     <ColoredPlayerName player={player} />
                   </TableCell>
                   <TableCell>{player.rating}</TableCell>
+                  <TableCell>{player.win_rate}%</TableCell>
                 </TableRow>
               )
             })}

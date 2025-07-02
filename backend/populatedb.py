@@ -1,7 +1,7 @@
 import sys
 import datetime
 
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select, func, case, col
 import pandas as pd
 from tqdm import tqdm
 
@@ -111,6 +111,30 @@ def populate_db():
 
 
 if __name__ == "__main__":
-    SQLModel.metadata.drop_all(engine)
-    create_db_and_tables()
-    populate_db()
+    # SQLModel.metadata.drop_all(engine)
+    # create_db_and_tables()
+    # populate_db()
+    season_id = 1
+    player_ids = ["austin", "ami"]
+    stats_query = (
+        select(
+            TimeSeries.player_id,
+            func.count(TimeSeries.game_id).label("game_count"),
+            func.sum(
+                case(
+                    (TimeSeries.win, 1),
+                    else_=0
+                )
+            ).label("num_wins")
+        )
+        .join(Game)
+        .where(
+            col(TimeSeries.player_id).in_(player_ids),
+            Game.season_id == season_id
+        )
+        .group_by(TimeSeries.player_id)
+    )
+    print(stats_query)
+    with Session(engine) as session:
+        x = session.exec(stats_query).all()
+        print(x)
