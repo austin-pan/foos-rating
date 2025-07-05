@@ -1,10 +1,13 @@
 import datetime
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, Column, DateTime
 
 
 ## Game models
 class GameBase(SQLModel):
-    date: datetime.datetime = Field(default_factory=datetime.datetime.now)
+    date: datetime.datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=datetime.datetime.now
+    )
     yellow_offense: str = Field(foreign_key="player.id")
     yellow_defense: str = Field(foreign_key="player.id")
     yellow_score: int

@@ -44,6 +44,7 @@ def create_game(game: models.GameCreate):
             raise HTTPException(status_code=400, detail="No active season")
 
         db_game = models.Game.model_validate(game, update={"season_id": current_season.id})
+
         session.add(db_game)
 
         game_player_ids = [
@@ -158,12 +159,15 @@ def read_ratings(season_id: int):
     with Session(db.engine) as session:
         # Select the ratings each participating player ended at the end of each day
         ranked_timeseries = select(
-            cast(models.Game.date, DATE),
+            func.date_trunc("day", models.Game.date).label("date"),
             models.TimeSeries.player_id,
             models.Player.name,
             models.TimeSeries.rating,
             func.row_number().over(
-                partition_by=(col(models.TimeSeries.player_id), cast(models.Game.date, DATE)),
+                partition_by=(
+                    col(models.TimeSeries.player_id),
+                    func.date_trunc("day", models.Game.date)
+                ),
                 order_by=desc(col(models.Game.id))
             ).label("game_num")
         ).select_from( # type: ignore
@@ -188,7 +192,7 @@ def read_ratings(season_id: int):
 
         # Group player rating snapshots by date
         date_to_timeseries_points: defaultdict[
-            datetime.date,
+            datetime.datetime,
             list[models.MinimalTimeSeriesPoint]
         ] = defaultdict(list)
         for t in timeseries_points:
@@ -202,9 +206,7 @@ def read_ratings(season_id: int):
             key=lambda dated_timeseries: dated_timeseries[0]
         )
         for date, timeseries_points in chronological_timeseries:
-            timeseries_result: dict[str, Any] = {
-                "date": datetime.datetime.combine(date, datetime.time(0, 0, 0))
-            }
+            timeseries_result: dict[str, Any] = {"date": date}
             for tp in timeseries_points:
                 timeseries_result[tp.name] = round(tp.rating)
 

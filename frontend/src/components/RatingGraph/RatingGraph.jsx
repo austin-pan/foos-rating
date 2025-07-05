@@ -10,6 +10,8 @@ import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 
+import { dateFormatter } from "../../utils";
+
 const Delta = ({value}) => {
   const color = value > 0 ? "darkgreen" : "darkred";
   const symbol = value > 0 ? "▲" : "▼";
@@ -37,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
               <TableRow>
                 <TableCell colSpan={3} align="center" sx={{ paddingBottom: 1 }}>
                   <Typography variant="h6" component="div">
-                    {new Date(label).toLocaleDateString("en-US")}
+                    {dateFormatter.format(new Date(label))}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -87,7 +89,7 @@ const RatingGraph = ({data, players}) => {
         <XAxis
           dataKey="date"
           type="number"
-          tickFormatter={time => new Date(time).toLocaleDateString("en-US")}
+          tickFormatter={time => dateFormatter.format(new Date(time))}
           domain={['dataMin - 500000000', 'dataMax + 700000000']}
           scale="linear" />
         <YAxis type="number" domain={[dataMin => Math.min(400, dataMin - 20), dataMax => Math.max(650, dataMax + 20)]} scale="linear" />

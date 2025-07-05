@@ -1,7 +1,7 @@
 import sys
 import datetime
 
-from sqlmodel import Session, SQLModel, select, func, case, col
+from sqlmodel import Session, SQLModel
 import pandas as pd
 from tqdm import tqdm
 
@@ -12,8 +12,9 @@ from foos import rating
 
 
 def populate_db():
-    game_data = pd.read_csv(sys.argv[1]).iloc[::-1]
-    game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601")
+    game_data = pd.read_csv(sys.argv[1])
+    game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601", utc=False)
+    print(game_data)
 
     player_data: list[str] = pd.concat(
         [
@@ -67,6 +68,7 @@ def populate_db():
         session.commit()
 
         timeseries_to_upload = []
+        curr_season = None
         for _, game in tqdm(game_data.iterrows()):
             db_game = Game(
                 date=game[["date"]].item(),
@@ -80,6 +82,9 @@ def populate_db():
             )
             session.add(db_game)
             session.commit()
+            if curr_season != db_game.season_id:
+                curr_season = db_game.season_id
+                player_id_to_rating = { p: rating.BASE_RATING for p in player_id_to_rating.keys() }
 
             game_player_id_to_rating = {
                 player_id: rating
@@ -111,30 +116,6 @@ def populate_db():
 
 
 if __name__ == "__main__":
-    # SQLModel.metadata.drop_all(engine)
-    # create_db_and_tables()
-    # populate_db()
-    season_id = 1
-    player_ids = ["austin", "ami"]
-    stats_query = (
-        select(
-            TimeSeries.player_id,
-            func.count(TimeSeries.game_id).label("game_count"),
-            func.sum(
-                case(
-                    (TimeSeries.win, 1),
-                    else_=0
-                )
-            ).label("num_wins")
-        )
-        .join(Game)
-        .where(
-            col(TimeSeries.player_id).in_(player_ids),
-            Game.season_id == season_id
-        )
-        .group_by(TimeSeries.player_id)
-    )
-    print(stats_query)
-    with Session(engine) as session:
-        x = session.exec(stats_query).all()
-        print(x)
+    SQLModel.metadata.drop_all(engine)
+    create_db_and_tables()
+    populate_db()

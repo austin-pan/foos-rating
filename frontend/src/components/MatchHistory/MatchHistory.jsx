@@ -6,10 +6,11 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-
-import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+
+import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
+import { dateFormatter } from "../../utils.js";
 
 const GameScore = ({score, otherScore}) => {
   if (score > otherScore) {
@@ -58,7 +59,7 @@ const MatchHistory = ({games, players}) => {
             {games.map((game) => (
               <TableRow key={game.id}>
                 <TableCell>
-                  {new Date(game.date).toLocaleDateString("en-US")}
+                  {dateFormatter.format(new Date(game.date))}
                 </TableCell>
                 <TableCell>
                   <Stack direction="column" spacing={1}>
