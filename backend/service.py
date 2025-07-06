@@ -159,44 +159,23 @@ def read_ratings(season_id: int):
     with Session(db.engine) as session:
         # Select the ratings each participating player ended at the end of each day
         ranked_timeseries = select(
-            func.date_trunc(
-                "day",
-                func.timezone(
-                    "America/Los_Angeles",
-                    func.timezone(
-                        "America/Los_Angeles",
-                        models.Game.date
-                    )
-                )
-            ).label("date"),
+            func.date_trunc("day", models.Game.date, "America/Los_Angeles").label("date"),
             models.TimeSeries.player_id,
             models.Player.name,
             models.TimeSeries.rating,
             func.row_number().over(
                 partition_by=(
                     col(models.TimeSeries.player_id),
-                    func.date_trunc(
-                        "day",
-                        func.timezone(
-                            "America/Los_Angeles",
-                            models.Game.date
-                        )
-                    )
+                    func.date_trunc("day", models.Game.date, "America/Los_Angeles")
                 ),
                 order_by=(
-                    desc(func.timezone(
-                        "America/Los_Angeles",
-                        func.timezone(
-                            "America/Los_Angeles",
-                            models.Game.date
-                        )
-                    )),
-                    desc(col(models.Game.id))
+                    desc(models.Game.date),
+                    desc(models.Game.id)
                 )
             ).label("game_num")
         ).select_from( # type: ignore
             join(models.TimeSeries, models.Game)
-            .join(models.Player, col(models.TimeSeries.player_id) == col(models.Player.id))
+            .join(models.Player, models.TimeSeries.player_id == models.Player.id)
         ).where(
             models.Game.season_id == season_id
         ).subquery()
