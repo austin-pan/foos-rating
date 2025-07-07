@@ -54,8 +54,6 @@ def create_game(game: models.GameCreate):
         })
 
         session.add(db_game)
-        session.commit()
-        session.refresh(db_game)
 
         game_player_ids = [
             db_game.yellow_offense,
@@ -79,19 +77,21 @@ def create_game(game: models.GameCreate):
             session.add(db_timeseries_point)
 
         session.commit()
+        session.refresh(db_game)
         return db_game
 
 
 @app.get("/games/", response_model=list[models.GamePublic])
 def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, le=100)):
     with Session(db.engine) as session:
-        games = session.exec(
+        games_query = (
             select(models.Game)
             .where(models.Game.season_id == season_id)
             .order_by(desc(col(models.Game.date)), desc(col(models.Game.id)))
             .limit(limit)
             .offset(offset)
-        ).all()
+        )
+        games = session.exec(games_query).all()
         return games
 
 
