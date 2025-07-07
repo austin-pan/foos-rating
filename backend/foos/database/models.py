@@ -1,20 +1,21 @@
 import datetime
-from sqlmodel import Field, Relationship, SQLModel, Column, DateTime
+from sqlmodel import Field, Relationship, SQLModel, Column, DateTime, Index
 
 
 ## Game models
 class GameBase(SQLModel):
-    date: datetime.datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-        default_factory=datetime.datetime.now
-    )
-    yellow_offense: str = Field(foreign_key="player.id")
-    yellow_defense: str = Field(foreign_key="player.id")
+    yellow_offense: str = Field(foreign_key="player.id", index=True)
+    yellow_defense: str = Field(foreign_key="player.id", index=True)
     yellow_score: int
-    black_offense: str = Field(foreign_key="player.id")
-    black_defense: str = Field(foreign_key="player.id")
+    black_offense: str = Field(foreign_key="player.id", index=True)
+    black_defense: str = Field(foreign_key="player.id", index=True)
     black_score: int
-    season_id: int | None = Field(default=None, foreign_key="season.id", ondelete="SET NULL")
+    season_id: int | None = Field(
+        default=None,
+        foreign_key="season.id",
+        ondelete="SET NULL",
+        index=True
+    )
 
 
 class GameCreate(GameBase):
@@ -23,13 +24,24 @@ class GameCreate(GameBase):
 
 class GamePublic(GameBase):
     id: int
+    date: datetime.datetime
+    date_trunc_day: datetime.datetime
 
 
 class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    date: datetime.datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    date_trunc_day: datetime.datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
 
     timeseries: list["TimeSeries"] = Relationship(back_populates="game", cascade_delete=True)
     season: "Season" = Relationship(back_populates="games")
+
+Index("game_date_idx", Game.date)
+Index("game_date_trunc_day_idx", Game.date_trunc_day)
 
 
 ## Player models
@@ -62,8 +74,8 @@ class Player(PlayerBase, table=True):
 ## Rating models
 class TimeSeries(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    game_id: int | None = Field(default=None, foreign_key="game.id")
-    player_id: str = Field(foreign_key="player.id")
+    game_id: int | None = Field(default=None, foreign_key="game.id", index=True)
+    player_id: str = Field(foreign_key="player.id", index=True)
     rating: float
     win: bool
 

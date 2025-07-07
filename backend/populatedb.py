@@ -1,6 +1,6 @@
 import sys
 import datetime
-
+from zoneinfo import ZoneInfo
 from sqlmodel import Session, SQLModel
 import pandas as pd
 from tqdm import tqdm
@@ -14,6 +14,9 @@ from foos import rating
 def populate_db():
     game_data = pd.read_csv(sys.argv[1])
     game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601", utc=False)
+    # game_data["date"].iloc[:270] = game_data["date"].iloc[:270].dt.tz_localize(None).dt.tz_localize(ZoneInfo("America/Los_Angeles"))
+    game_data["date"] = game_data["date"].dt.tz_convert(ZoneInfo("America/Los_Angeles"))
+    game_data["date_trunc_day"] = game_data["date"].dt.floor("D")
     print(game_data)
 
     player_data: list[str] = pd.concat(
@@ -72,6 +75,7 @@ def populate_db():
         for _, game in tqdm(game_data.iterrows()):
             db_game = Game(
                 date=game[["date"]].item(),
+                date_trunc_day=game[["date_trunc_day"]].item(),
                 yellow_offense=game[["yellow_offense"]].item(),
                 yellow_defense=game[["yellow_defense"]].item(),
                 yellow_score=int(game[["yellow_score"]].item()),
@@ -84,7 +88,7 @@ def populate_db():
             session.commit()
             if curr_season != db_game.season_id:
                 curr_season = db_game.season_id
-                player_id_to_rating = { p: rating.BASE_RATING for p in player_id_to_rating.keys() }
+                player_id_to_rating = { p: rating.BASE_RATING for p in player_id_to_rating }
 
             game_player_id_to_rating = {
                 player_id: rating
