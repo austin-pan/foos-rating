@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from foos import color
 from foos.database import engine, create_db_and_tables
-from foos.database.models import Game, Player, Season, TimeSeries
+from foos.database import models
 from foos import rating
 
 
@@ -46,7 +46,7 @@ def populate_db():
     with Session(engine) as session:
         seasons_to_upload = []
         for season in seasons:
-            db_season = Season(
+            db_season = models.Season(
                 name=season["name"],
                 start_date=season["start_date"],
                 end_date=season["end_date"],
@@ -60,7 +60,7 @@ def populate_db():
         player_id_to_rating: dict[str, float] = {}
         for player in player_data:
             player_id = player.lower().replace(" ", "_")
-            db_player = Player(
+            db_player = models.Player(
                 id=player_id,
                 name=player.capitalize(),
                 color=color.get_random_dark_color()
@@ -73,7 +73,7 @@ def populate_db():
         timeseries_to_upload = []
         curr_season = None
         for _, game in tqdm(game_data.iterrows()):
-            db_game = Game(
+            db_game = models.Game(
                 date=game[["date"]].item(),
                 date_trunc_day=game[["date_trunc_day"]].item(),
                 yellow_offense=game[["yellow_offense"]].item(),
@@ -108,7 +108,7 @@ def populate_db():
                 win = player_id_to_rating[player_id] < updated_rating
                 player_id_to_rating[player_id] = updated_rating
 
-                db_timeseries_point = TimeSeries(
+                db_timeseries_point = models.TimeSeries(
                     game_id=db_game.id,
                     player_id=player_id,
                     rating=updated_rating,

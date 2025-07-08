@@ -1,6 +1,7 @@
 from datetime import date
 
-from sqlmodel import Session, col, desc, func, select, case
+from sqlmodel import Integer, Session, cast, col, desc, func, select, case
+from sqlalchemy import Select
 
 from foos.database import models
 from foos.rating import delta
@@ -23,57 +24,43 @@ class FoosGame:
         self.team_b = team_b
 
 class PlayerStats:
-    def __init__(self, num_games: int, num_wins: int):
+    def __init__(self, num_games: int, num_wins: int, rating: float):
         self.num_games = num_games
         self.num_wins = num_wins
+        self.rating = rating
 
         self.win_rate = 0 if self.num_games == 0 else self.num_wins / self.num_games
 
 
-def get_player_ratings(session: Session, player_ids: list[str], season_id: int) -> dict[str, float]:
-    ranked_timeseries = (
-        select(
-            models.TimeSeries.player_id,
-            models.TimeSeries.rating,
-            func.row_number().over(
-                partition_by=col(models.TimeSeries.player_id),
-                order_by=desc(col(models.TimeSeries.game_id))
-            ).label("game_num")
-        )
+def get_latest_ratings_query(player_ids: list[str], season_id: int) -> Select[tuple[str, float]]:
+    return (
+        select(models.TimeSeries.player_id, models.TimeSeries.rating)
         .join(models.Game)
         .where(
-            models.Game.id == models.TimeSeries.game_id,
             col(models.TimeSeries.player_id).in_(player_ids),
             models.Game.season_id == season_id
         )
-        .subquery()
+        .order_by(models.TimeSeries.player_id, desc(models.Game.date), desc(models.Game.id))
+        .prefix_with(f"DISTINCT ON ({models.TimeSeries.player_id})")
     )
-    latest_ratings_query = (
-        select(
-            ranked_timeseries.c.player_id,
-            ranked_timeseries.c.rating
-        )
-        .select_from(ranked_timeseries)
-        .where(ranked_timeseries.c.game_num == 1)
+
+
+def get_player_ratings(session: Session, player_ids: list[str], season_id: int) -> dict[str, float]:
+    latest_ratings: dict[str, float] = dict(
+        session.exec(get_latest_ratings_query(player_ids, season_id)).all()
     )
-    latest_ratings: dict[str, float] = dict(session.exec(latest_ratings_query).all())
     for player_id in player_ids:
         if player_id not in latest_ratings:
             latest_ratings[player_id] = BASE_RATING
     return latest_ratings
 
 
-def get_player_game_stats(session: Session, player_ids: list[str], season_id: int) -> dict[str, PlayerStats]:
+def get_player_stats(session: Session, player_ids: list[str], season_id: int) -> dict[str, PlayerStats]:
     stats_query = (
         select(
             models.TimeSeries.player_id,
             func.count(models.TimeSeries.game_id).label("game_count"),
-            func.sum(
-                case(
-                    (models.TimeSeries.win, 1),
-                    else_=0
-                )
-            ).label("win_count")
+            func.sum(cast(models.TimeSeries.win, Integer)).label("win_count")
         )
         .join(models.Game)
         .where(
@@ -81,10 +68,24 @@ def get_player_game_stats(session: Session, player_ids: list[str], season_id: in
             models.Game.season_id == season_id
         )
         .group_by(models.TimeSeries.player_id)
+    ).subquery("stats")
+    ratings_query = get_latest_ratings_query(player_ids, season_id).subquery("ratings")
+
+    full_query = (
+        select(
+            stats_query.c.player_id,
+            stats_query.c.game_count,
+            stats_query.c.win_count,
+            ratings_query.c.rating
+        )
+        .select_from(
+            stats_query
+            .join(ratings_query, stats_query.c.player_id == ratings_query.c.player_id)
+        )
     )
     stats = {
-        player_id: PlayerStats(num_games, num_wins)
-        for player_id, num_games, num_wins in session.exec(stats_query).all()
+        player_id: PlayerStats(num_games, num_wins, rating)
+        for player_id, num_games, num_wins, rating in session.exec(full_query).all()
     }
     return stats
 
