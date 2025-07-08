@@ -70,6 +70,12 @@ class Player(PlayerBase, table=True):
 
     timeseries: list["TimeSeries"] = Relationship(back_populates="player")
 
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
 
 ## Rating models
 class TimeSeries(SQLModel, table=True):

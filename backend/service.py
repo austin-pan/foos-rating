@@ -123,32 +123,19 @@ def recolor_players():
 @app.get("/players/", response_model=list[models.RatedPlayerPublic])
 def read_players(season_id: int):
     with Session(db.engine) as session:
-        db_players = session.exec(
-            select(models.Player)
-            .order_by(col(models.Player.name))
-        ).all()
-        player_ids = [p.id for p in db_players]
-        player_id_to_stats = rating.get_player_stats(session, player_ids, season_id)
-        # Account for first-time players
-        for player_id in player_ids:
-            if player_id not in player_id_to_stats:
-                player_id_to_stats[player_id] = rating.PlayerStats(
-                    num_games=0,
-                    num_wins=0,
-                    rating=rating.BASE_RATING
-                )
-        players = [
+        player_to_stats = rating.get_player_stats(session, season_id)
+        rated_players = [
             models.RatedPlayerPublic.model_validate(
                 p,
                 update={
-                    "rating": round(player_id_to_stats[p.id].rating),
-                    "probationary": player_id_to_stats[p.id].num_games < 10,
-                    "win_rate": round(100 * player_id_to_stats[p.id].win_rate, 2)
+                    "rating": round(stats.rating),
+                    "probationary": stats.num_games < 10,
+                    "win_rate": round(100 * stats.win_rate, 2)
                 }
             )
-            for p in db_players
+            for p, stats in player_to_stats.items()
         ]
-        return players
+        return rated_players
 
 
 @app.post("/players/", response_model=models.PlayerPublic)
