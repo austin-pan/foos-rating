@@ -20,9 +20,14 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
 const refreshData = async (setGames, setTimeSeries, setPlayers, seasonId) => {
-  setGames(await Games.readGames(seasonId));
-  setTimeSeries(await TimeSeries.readTimeSeries(seasonId));
-  setPlayers(await Players.readPlayers(seasonId));
+  const [games, timeseries, players] = await Promise.all([
+    Games.readGames(seasonId),
+    TimeSeries.readTimeSeries(seasonId),
+    Players.readPlayers(seasonId)
+  ]);
+  setGames(games);
+  setTimeSeries(timeseries);
+  setPlayers(players);
 }
 
 const Home = () => {
