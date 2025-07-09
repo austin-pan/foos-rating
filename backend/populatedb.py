@@ -67,11 +67,10 @@ def populate_db():
             )
             players_to_upload.append(db_player)
             player_id_to_rating[player_id] = rating.BASE_RATING
-        session.bulk_save_objects(players_to_upload)
+        session.add_all(players_to_upload)
         session.commit()
 
-        timeseries_to_upload = []
-        curr_season = None
+        games_to_upload: list[models.Game] = []
         for _, game in tqdm(game_data.iterrows()):
             db_game = models.Game(
                 date=game[["date"]].item(),
@@ -84,8 +83,13 @@ def populate_db():
                 black_score=int(game[["black_score"]].item()),
                 season_id=int(game[["season_id"]].item())
             )
-            session.add(db_game)
-            session.commit()
+            games_to_upload.append(db_game)
+        session.add_all(games_to_upload)
+        session.commit()
+
+        timeseries_to_upload: list[models.TimeSeries] = []
+        curr_season = None
+        for db_game in tqdm(games_to_upload):
             if curr_season != db_game.season_id:
                 curr_season = db_game.season_id
                 player_id_to_rating = { p: rating.BASE_RATING for p in player_id_to_rating }
@@ -115,7 +119,7 @@ def populate_db():
                     win=win
                 )
                 timeseries_to_upload.append(db_timeseries_point)
-        session.bulk_save_objects(timeseries_to_upload, preserve_order=True)
+        session.bulk_save_objects(timeseries_to_upload)
         session.commit()
 
 
