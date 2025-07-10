@@ -19,15 +19,17 @@ import Container from "@mui/material/Container";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
-const refreshData = async (setGames, setTimeSeries, setPlayers, seasonId) => {
-  const [games, timeseries, players] = await Promise.all([
+const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId) => {
+  const [games, timeseries, players, playersStats] = await Promise.all([
     Games.readGames(seasonId),
     TimeSeries.readTimeSeries(seasonId),
-    Players.readPlayers(seasonId)
+    Players.readPlayers(),
+    Players.readPlayersStats(seasonId)
   ]);
   setGames(games);
   setTimeSeries(timeseries);
   setPlayers(players);
+  setPlayersStats(playersStats);
 }
 
 const Home = () => {
@@ -37,6 +39,7 @@ const Home = () => {
   const [games, setGames] = useState([]);
   const [timeseries, setTimeSeries] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [playersStats, setPlayersStats] = useState([]);
   const [seasonId, setSeasonId] = useState(1);
 
   useEffect(() => {
@@ -44,7 +47,7 @@ const Home = () => {
       try {
         const season = await Season.getCurrentSeason();
         setSeasonId(season.id);
-        await refreshData(setGames, setTimeSeries, setPlayers, season.id);
+        await refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, season.id);
       } catch (e) {
         console.log(e);
         setError(e);
@@ -68,12 +71,12 @@ const Home = () => {
             onChange={async (e) => {
               setSeasonId(e.target.value);
               setIsLoading(true);
-              await refreshData(setGames, setTimeSeries, setPlayers, e.target.value);
+              await refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, e.target.value);
               setIsLoading(false);
             }}
           />
-          <Leaderboard players={players} seasonId={seasonId} />
-          <RatingGraph data={timeseries} players={players} seasonId={seasonId} />
+          <Leaderboard playersStats={playersStats} seasonId={seasonId} />
+          <RatingGraph data={timeseries} playersStats={playersStats} seasonId={seasonId} />
         </>
       }
 
@@ -81,7 +84,7 @@ const Home = () => {
       {
         isLoading ?
         <LoadingIcon /> :
-        <MatchHistory games={games} players={players} />
+        <MatchHistory games={games} playersStats={playersStats} />
       }
 
       <Typography variant="h3" component="h1" marginY={4}>Forms</Typography>
@@ -89,14 +92,14 @@ const Home = () => {
       {
         isLoading ?
         <LoadingIcon /> :
-        <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, seasonId)} />
+        <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
       }
 
       <Typography variant="h4" component="h2" marginY={4}>Add Player</Typography>
       {
         isLoading ?
         <LoadingIcon /> :
-        <PlayerForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, seasonId)} />
+        <PlayerForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
       }
     </Container>
   )

@@ -19,7 +19,7 @@ const GameScore = ({score, otherScore}) => {
   return <span>{score}</span>
 }
 
-const MatchHistory = ({games, players}) => {
+const MatchHistory = ({games, playersStats}) => {
   if (games.length == 0) {
     return (
       <Box display="flex" justifyContent="center">
@@ -28,9 +28,9 @@ const MatchHistory = ({games, players}) => {
     )
   }
 
-  const playerIdToPlayer = {};
-  for (const player of players) {
-    playerIdToPlayer[player.id] = player;
+  const playerIdToStats = {};
+  for (const playerStats of playersStats) {
+    playerIdToStats[playerStats.id] = playerStats;
   }
 
   return (
@@ -63,8 +63,8 @@ const MatchHistory = ({games, players}) => {
                 </TableCell>
                 <TableCell>
                   <Stack direction="column" spacing={1}>
-                    <ColoredPlayerName player={playerIdToPlayer[game.yellow_offense]} />
-                    <ColoredPlayerName player={playerIdToPlayer[game.yellow_defense]} />
+                    <ColoredPlayerName player={playerIdToStats[game.yellow_offense]} />
+                    <ColoredPlayerName player={playerIdToStats[game.yellow_defense]} />
                   </Stack>
                 </TableCell>
                 <TableCell>
@@ -74,8 +74,8 @@ const MatchHistory = ({games, players}) => {
                 </TableCell>
                 <TableCell>
                   <Stack direction="column" spacing={1}>
-                    <ColoredPlayerName player={playerIdToPlayer[game.black_offense]} />
-                    <ColoredPlayerName player={playerIdToPlayer[game.black_defense]} />
+                    <ColoredPlayerName player={playerIdToStats[game.black_offense]} />
+                    <ColoredPlayerName player={playerIdToStats[game.black_defense]} />
                   </Stack>
                 </TableCell>
               </TableRow>

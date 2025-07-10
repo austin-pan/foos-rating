@@ -73,12 +73,12 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const RatingGraph = ({data, players}) => {
+const RatingGraph = ({data, playersStats}) => {
   const renderLineChart = (
     <ResponsiveContainer>
       <LineChart data={data}>
         {
-          players.map(p => {
+          playersStats.map(p => {
             return (
               <Line type="linear" dataKey={p.name} stroke={p.color} connectNulls />
             )
