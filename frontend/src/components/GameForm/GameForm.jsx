@@ -77,6 +77,12 @@ const GameRecorder = ({players, refreshData}) => {
 
   const [errorMessage, setErrorMessage] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState(null);
+
+  const showSnackbar = (message) => {
+    setSnackbarMessage(message);
+    setSnackbarOpen(true);
+  }
 
   const addGame = async (e) => {
     e.preventDefault();
@@ -110,15 +116,16 @@ const GameRecorder = ({players, refreshData}) => {
         "yellow_score": 0,
         "black_score": 0
       });
-      setSnackbarOpen(true);
+      showSnackbar("Game added");
     } catch (e) {
       setErrorMessage(e.message);
     }
   }
 
-  const deleteGame = async () => {
+  const deleteLatestGame = async () => {
     try {
-      await Games.deleteRecentGame();
+      await Games.deleteLatestGame();
+      showSnackbar("Game deleted");
       refreshData();
       setErrorMessage(null);
     } catch {
@@ -169,7 +176,7 @@ const GameRecorder = ({players, refreshData}) => {
           </Grid>
           <Grid size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
             <Button
-              onClick={deleteGame}
+              onClick={deleteLatestGame}
               variant="outlined"
               sx={{ flexGrow: 1 }}
             >
@@ -186,7 +193,7 @@ const GameRecorder = ({players, refreshData}) => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <MuiAlert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
-          Game submitted!
+          {snackbarMessage}
         </MuiAlert>
       </Snackbar>
     </>

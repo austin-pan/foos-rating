@@ -29,8 +29,8 @@ const addGame = async (game) => {
   }
 }
 
-const deleteRecentGame = async () => {
-  const response = await fetch(`${API_URL}/games/recent/`, {
+const deleteLatestGame = async () => {
+  const response = await fetch(`${API_URL}/games/latest/`, {
     method: "DELETE",
     mode: "cors"
   });
@@ -43,5 +43,5 @@ const deleteRecentGame = async () => {
 export default {
   readGames,
   addGame,
-  deleteRecentGame
+  deleteLatestGame
 }

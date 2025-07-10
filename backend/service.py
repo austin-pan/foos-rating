@@ -109,8 +109,8 @@ def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, l
         return games
 
 
-@app.delete("/games/recent/")
-def delete_recent_game():
+@app.delete("/games/latest/")
+def delete_latest_game():
     with Session(db.engine) as session:
         db_game = session.exec(
             select(models.Game)
