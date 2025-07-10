@@ -15,8 +15,8 @@ def populate_db():
     game_data = pd.read_csv(sys.argv[1])
     game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601", utc=False)
     # game_data["date"].iloc[:270] = game_data["date"].iloc[:270].dt.tz_localize(None).dt.tz_localize(ZoneInfo("America/Los_Angeles"))
-    game_data["date"] = game_data["date"].dt.tz_convert(ZoneInfo("America/Los_Angeles"))
-    game_data["date_trunc_day"] = game_data["date"].dt.floor("D")
+    # game_data["date"] = game_data["date"].dt.tz_convert(ZoneInfo("America/Los_Angeles"))
+    # game_data["date_trunc_day"] = game_data["date"].dt.floor("D")
     print(game_data)
 
     player_data: list[str] = pd.concat(

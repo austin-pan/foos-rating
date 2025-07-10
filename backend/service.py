@@ -38,6 +38,18 @@ def on_startup():
 
 @app.post("/games/", response_model=models.GamePublic)
 def create_game(game: models.GameCreate):
+    if game.black_score == game.yellow_score:
+        raise HTTPException(status_code=400, detail="Tie game")
+    if game.black_score < 0 or game.yellow_score < 0:
+        raise HTTPException(status_code=400, detail="Invalid score")
+    if len(set([
+        game.yellow_offense,
+        game.yellow_defense,
+        game.black_offense,
+        game.black_defense
+    ])) != 4:
+        raise HTTPException(status_code=400, detail="Invalid players")
+
     with Session(db.engine) as session:
         current_season = session.exec(
             select(models.Season)
@@ -120,8 +132,18 @@ def recolor_players():
         return {"ok": True}
 
 
-@app.get("/players/", response_model=list[models.RatedPlayerPublic])
-def read_players(season_id: int):
+@app.get("/players/", response_model=list[models.PlayerPublic])
+def read_players():
+    with Session(db.engine) as session:
+        players = session.exec(
+            select(models.Player)
+            .order_by(models.Player.name)
+        ).all()
+        return players
+
+
+@app.get("/players/stats", response_model=list[models.RatedPlayerPublic])
+def read_player_stats(season_id: int):
     with Session(db.engine) as session:
         player_to_stats = rating.get_player_stats(session, season_id)
         rated_players = [

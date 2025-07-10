@@ -81,15 +81,14 @@ def get_player_stats(session: Session, season_id: int) -> dict[models.Player, Pl
             join(
                 models.Player,
                 stats_query,
-                models.Player.id == stats_query.c.player_id,
-                isouter=True
+                models.Player.id == stats_query.c.player_id
             )
             .join(
                 ratings_query,
-                models.Player.id == ratings_query.c.player_id,
-                isouter=True
+                models.Player.id == ratings_query.c.player_id
             )
         )
+        .order_by(models.Player.name)
     )
     stats = {
         player: PlayerStats(num_games, num_wins, rating)
