@@ -107,6 +107,7 @@ class Season(SQLModel, table=True):
     name: str
     start_date: datetime.date
     end_date: datetime.date
+    rating_method: str
     active: bool
 
     games: list["Game"] = Relationship(back_populates="season")

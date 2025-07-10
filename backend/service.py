@@ -76,7 +76,9 @@ def create_game(game: models.GameCreate):
         player_id_to_current_rating = rating.get_player_ratings(
             session, game_player_ids, current_season.id
         )
-        player_id_to_updated_rating = rating.update_ratings(db_game, player_id_to_current_rating)
+        player_id_to_updated_rating = rating.update_ratings(
+            db_game, player_id_to_current_rating, current_season.rating_method
+        )
         for player_id, updated_rating in player_id_to_updated_rating.items():
             win = player_id_to_current_rating[player_id] < updated_rating
 

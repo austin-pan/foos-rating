@@ -7,7 +7,6 @@ from foos.database import models
 from foos.rating import delta
 
 
-WIN_SCORE = 5
 BASE_RATING = 500.0
 
 
@@ -97,7 +96,11 @@ def get_player_stats(session: Session, season_id: int) -> dict[models.Player, Pl
     return stats
 
 
-def update_ratings(db_game: models.Game, player_id_to_rating: dict[str, float]):
+def update_ratings(
+    db_game: models.Game,
+    player_id_to_rating: dict[str, float],
+    method: str
+) -> dict[str, float]:
     player_id_to_rating = player_id_to_rating.copy()
     game = FoosGame(
         game_date=db_game.date,
@@ -121,11 +124,22 @@ def update_ratings(db_game: models.Game, player_id_to_rating: dict[str, float]):
     rating_diff = win_team_rating - lose_team_rating
     actual_score_diff = win_team.score - lose_team.score
 
-    d = delta.scaled_square_differential(
-        actual_score_diff=actual_score_diff,
-        rating_diff=rating_diff,
-        win_score=WIN_SCORE
-    )
+    if method == "scaled_translated_differential":
+        d = delta.scaled_translated_differential(
+            actual_score_diff=actual_score_diff,
+            rating_diff=rating_diff,
+            win_score=win_team.score
+        )
+    elif method == "sigmoid_differential":
+        d = delta.sigmoid_differential(
+            actual_score_diff=actual_score_diff,
+            rating_diff=rating_diff,
+            win_score=win_team.score
+        )
+    elif method == "square_differential":
+        d = delta.square_differential(actual_score_diff=actual_score_diff)
+    else:
+        raise ValueError(f"Unknown rating method: {method}")
 
     player_id_to_rating[win_team.offense] += d
     player_id_to_rating[win_team.defense] += d

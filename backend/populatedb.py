@@ -10,7 +10,6 @@ from foos.database import engine, create_db_and_tables
 from foos.database import models
 from foos import rating
 
-
 def populate_db():
     game_data = pd.read_csv(sys.argv[1])
     game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601", utc=False)
@@ -33,13 +32,15 @@ def populate_db():
             "name": "1",
             "start_date": datetime.date(2024, 1, 1),
             "end_date": datetime.date(2024, 6, 30),
-            "active": False
+            "active": False,
+            "rating_method": "sigmoid_differential"
         },
         {
             "name": "2",
             "start_date": datetime.date(2024, 7, 1),
             "end_date": datetime.date(2024, 12, 31),
-            "active": True
+            "active": True,
+            "rating_method": "sigmoid_differential"
         }
     ]
 
@@ -50,7 +51,8 @@ def populate_db():
                 name=season["name"],
                 start_date=season["start_date"],
                 end_date=season["end_date"],
-                active=season["active"]
+                active=season["active"],
+                rating_method=season["rating_method"]
             )
             seasons_to_upload.append(db_season)
         session.bulk_save_objects(seasons_to_upload)
@@ -106,7 +108,8 @@ def populate_db():
             }
             game_player_id_to_updated_rating = rating.update_ratings(
                 db_game=db_game,
-                player_id_to_rating=game_player_id_to_rating
+                player_id_to_rating=game_player_id_to_rating,
+                method=db_game.season.rating_method
             )
             for player_id, updated_rating in game_player_id_to_updated_rating.items():
                 win = player_id_to_rating[player_id] < updated_rating
