@@ -28,6 +28,24 @@ class GamePublic(GameBase):
     date_trunc_day: datetime.datetime
 
 
+class GameDeltaPublic(GameBase):
+    id: int
+    date: datetime.datetime
+    date_trunc_day: datetime.datetime
+
+    yellow_offense_rating: int
+    yellow_offense_delta: int
+
+    yellow_defense_rating: int
+    yellow_defense_delta: int
+
+    black_offense_rating: int
+    black_offense_delta: int
+
+    black_defense_rating: int
+    black_defense_delta: int
+
+
 class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     date: datetime.datetime = Field(
@@ -83,6 +101,7 @@ class TimeSeries(SQLModel, table=True):
     game_id: int | None = Field(default=None, foreign_key="game.id", index=True)
     player_id: str = Field(foreign_key="player.id", index=True)
     rating: float
+    delta: float
     win: bool
 
     game: "Game" = Relationship(back_populates="timeseries")

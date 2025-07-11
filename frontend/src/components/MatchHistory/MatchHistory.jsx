@@ -12,11 +12,32 @@ import Box from '@mui/material/Box';
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 import { dateFormatter } from "../../utils.js";
 
-const GameScore = ({score, otherScore}) => {
-  if (score > otherScore) {
-    return <span><strong>{score}</strong></span>
+const PlayerDelta = ({player, delta}) => {
+  const color = delta > 0 ? "darkgreen" : "darkred";
+  const symbol = delta > 0 ? "▲" : "▼";
+  return (
+    <Stack direction="row" spacing={1}>
+      <Typography sx={{ color: color, fontSize: "small", opacity: 0.5 }}>
+        {symbol}{Math.abs(delta)}
+      </Typography>
+      <ColoredPlayerName player={player} />
+    </Stack>
+  )
+}
+
+const GameScore = ({yellowScore, blackScore}) => {
+  if (yellowScore > blackScore) {
+    return <Stack direction="row" spacing={1}>
+      <Typography sx={{ fontWeight: "bold" }}>{yellowScore}</Typography>
+      <Typography>-</Typography>
+      <Typography>{blackScore}</Typography>
+    </Stack>
   }
-  return <span>{score}</span>
+  return <Stack direction="row" spacing={1}>
+    <Typography>{yellowScore}</Typography>
+    <Typography>-</Typography>
+    <Typography sx={{ fontWeight: "bold" }}>{blackScore}</Typography>
+  </Stack>
 }
 
 const MatchHistory = ({games, playersStats}) => {
@@ -63,19 +84,17 @@ const MatchHistory = ({games, playersStats}) => {
                 </TableCell>
                 <TableCell>
                   <Stack direction="column" spacing={1}>
-                    <ColoredPlayerName player={playerIdToStats[game.yellow_offense]} />
-                    <ColoredPlayerName player={playerIdToStats[game.yellow_defense]} />
+                    <PlayerDelta player={playerIdToStats[game.yellow_offense]} delta={game.yellow_offense_delta} />
+                    <PlayerDelta player={playerIdToStats[game.yellow_defense]} delta={game.yellow_defense_delta} />
                   </Stack>
                 </TableCell>
-                <TableCell>
-                  <GameScore score={game.yellow_score} otherScore={game.black_score} />
-                  <span> - </span>
-                  <GameScore score={game.black_score} otherScore={game.yellow_score} />
+                <TableCell sx={{ "fontSize": "medium" }}>
+                  <GameScore yellowScore={game.yellow_score} blackScore={game.black_score} />
                 </TableCell>
                 <TableCell>
                   <Stack direction="column" spacing={1}>
-                    <ColoredPlayerName player={playerIdToStats[game.black_offense]} />
-                    <ColoredPlayerName player={playerIdToStats[game.black_defense]} />
+                    <PlayerDelta player={playerIdToStats[game.black_offense]} delta={game.black_offense_delta} />
+                    <PlayerDelta player={playerIdToStats[game.black_defense]} delta={game.black_defense_delta} />
                   </Stack>
                 </TableCell>
               </TableRow>

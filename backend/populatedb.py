@@ -112,16 +112,16 @@ def populate_db():
                 method=db_game.season.rating_method
             )
             for player_id, updated_rating in game_player_id_to_updated_rating.items():
-                win = player_id_to_rating[player_id] < updated_rating
-                player_id_to_rating[player_id] = updated_rating
-
                 db_timeseries_point = models.TimeSeries(
                     game_id=db_game.id,
                     player_id=player_id,
                     rating=updated_rating,
-                    win=win
+                    delta=updated_rating - player_id_to_rating[player_id],
+                    win=updated_rating > player_id_to_rating[player_id]
                 )
+
                 timeseries_to_upload.append(db_timeseries_point)
+                player_id_to_rating[player_id] = updated_rating
         session.bulk_save_objects(timeseries_to_upload)
         session.commit()
 

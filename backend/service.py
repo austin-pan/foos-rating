@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, col, desc, func, select, join
+from sqlalchemy.orm import aliased
 
 from foos import color, database as db, rating
 from foos.database import models
@@ -66,6 +67,7 @@ def create_game(game: models.GameCreate):
         })
 
         session.add(db_game)
+        session.commit()
 
         game_player_ids = [
             db_game.yellow_offense,
@@ -80,13 +82,12 @@ def create_game(game: models.GameCreate):
             db_game, player_id_to_current_rating, current_season.rating_method
         )
         for player_id, updated_rating in player_id_to_updated_rating.items():
-            win = player_id_to_current_rating[player_id] < updated_rating
-
             db_timeseries_point = models.TimeSeries(
                 game_id=db_game.id,
                 player_id=player_id,
                 rating=updated_rating,
-                win=win
+                delta=updated_rating - player_id_to_current_rating[player_id],
+                win=updated_rating > player_id_to_current_rating[player_id]
             )
             session.add(db_timeseries_point)
 
@@ -95,17 +96,68 @@ def create_game(game: models.GameCreate):
         return db_game
 
 
-@app.get("/games/", response_model=list[models.GamePublic])
+@app.get("/games/", response_model=list[models.GameDeltaPublic])
 def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, le=100)):
     with Session(db.engine) as session:
-        games_query = (
-            select(models.Game)
+        # Create aliases for the TimeSeries table for each player position
+        tyo = aliased(models.TimeSeries)
+        tyd = aliased(models.TimeSeries)
+        tbo = aliased(models.TimeSeries)
+        tbd = aliased(models.TimeSeries)
+
+        query = (
+            select(
+                models.Game,
+                tyo.rating.label("yellow_offense_rating"),
+                tyo.delta.label("yellow_offense_delta"),
+                tyd.rating.label("yellow_defense_rating"),
+                tyd.delta.label("yellow_defense_delta"),
+                tbo.rating.label("black_offense_rating"),
+                tbo.delta.label("black_offense_delta"),
+                tbd.rating.label("black_defense_rating"),
+                tbd.delta.label("black_defense_delta")
+            )
+            .join(
+                tyo,
+                (models.Game.id == tyo.game_id) &
+                (models.Game.yellow_offense == tyo.player_id)
+            )
+            .join(
+                tyd,
+                (models.Game.id == tyd.game_id) &
+                (models.Game.yellow_defense == tyd.player_id)
+            )
+            .join(
+                tbo,
+                (models.Game.id == tbo.game_id) &
+                (models.Game.black_offense == tbo.player_id)
+            )
+            .join(
+                tbd,
+                (models.Game.id == tbd.game_id) &
+                (models.Game.black_defense == tbd.player_id)
+            )
             .where(models.Game.season_id == season_id)
             .order_by(desc(col(models.Game.date)), desc(col(models.Game.id)))
             .limit(limit)
             .offset(offset)
         )
-        games = session.exec(games_query).all()
+        games = [
+            models.GameDeltaPublic.model_validate(
+                game,
+                update={
+                    "yellow_offense_rating": round(deltas[0]),
+                    "yellow_offense_delta": round(deltas[1]),
+                    "yellow_defense_rating": round(deltas[2]),
+                    "yellow_defense_delta": round(deltas[3]),
+                    "black_offense_rating": round(deltas[4]),
+                    "black_offense_delta": round(deltas[5]),
+                    "black_defense_rating": round(deltas[6]),
+                    "black_defense_delta": round(deltas[7])
+                }
+            )
+            for game, *deltas in session.exec(query).all()
+        ]
         return games
 
 
@@ -118,6 +170,7 @@ def delete_latest_game():
         ).first()
         if not db_game:
             raise HTTPException(status_code=404, detail="Game not found")
+        # Delete the game and all associated timeseries points through cascade
         session.delete(db_game)
         session.commit()
         return {"ok": True}
