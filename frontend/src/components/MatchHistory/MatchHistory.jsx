@@ -12,15 +12,15 @@ import Box from '@mui/material/Box';
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 import { dateFormatter } from "../../utils.js";
 
-const PlayerDelta = ({player, delta}) => {
+const PlayerDelta = ({player, delta, direction = "row"}) => {
   const color = delta > 0 ? "darkgreen" : "darkred";
   const symbol = delta > 0 ? "▲" : "▼";
   return (
-    <Stack direction="row" spacing={1}>
-      <Typography sx={{ color: color, fontSize: "small", opacity: 0.5 }}>
+    <Stack direction={direction} spacing={1}>
+      <ColoredPlayerName player={player} />
+      <Typography sx={{ color: color, opacity: 0.5 }}>
         {symbol}{Math.abs(delta)}
       </Typography>
-      <ColoredPlayerName player={player} />
     </Stack>
   )
 }
@@ -68,33 +68,37 @@ const MatchHistory = ({games, playersStats}) => {
           size="small"
           aria-label="match history table"
         >
+          <colgroup>
+            <col style={{width:'40%'}}/>
+            <col style={{width:'20%'}}/>
+            <col style={{width:'40%'}}/>
+          </colgroup>
           <TableHead>
             <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Yellow</TableCell>
-              <TableCell>Score</TableCell>
-              <TableCell>Black</TableCell>
+              <TableCell sx={{ textAlign: "right" }}>Yellow</TableCell>
+              <TableCell></TableCell>
+              <TableCell sx={{ textAlign: "left" }}>Black</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {games.map((game) => (
               <TableRow key={game.id}>
                 <TableCell>
-                  {dateFormatter.format(new Date(game.date))}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="column" spacing={1}>
+                  <Stack direction="column" alignItems="end" spacing={1} sx={{ fontSize: "medium"}}>
                     <PlayerDelta player={playerIdToStats[game.yellow_offense]} delta={game.yellow_offense_delta} />
                     <PlayerDelta player={playerIdToStats[game.yellow_defense]} delta={game.yellow_defense_delta} />
                   </Stack>
                 </TableCell>
-                <TableCell sx={{ "fontSize": "medium" }}>
-                  <GameScore yellowScore={game.yellow_score} blackScore={game.black_score} />
+                <TableCell>
+                  <Stack direction="column" alignItems="center" spacing={1} sx={{ fontSize: "medium" }}>
+                    <GameScore yellowScore={game.yellow_score} blackScore={game.black_score} />
+                    <Typography variant="body2" sx={{ fontSize: "small" }}>{dateFormatter.format(new Date(game.date))}</Typography>
+                  </Stack>
                 </TableCell>
                 <TableCell>
-                  <Stack direction="column" spacing={1}>
-                    <PlayerDelta player={playerIdToStats[game.black_offense]} delta={game.black_offense_delta} />
-                    <PlayerDelta player={playerIdToStats[game.black_defense]} delta={game.black_defense_delta} />
+                  <Stack direction="column" alignItems="start" spacing={1} sx={{ fontSize: "medium" }}>
+                    <PlayerDelta player={playerIdToStats[game.black_offense]} delta={game.black_offense_delta} direction="row-reverse" />
+                    <PlayerDelta player={playerIdToStats[game.black_defense]} delta={game.black_defense_delta} direction="row-reverse" />
                   </Stack>
                 </TableCell>
               </TableRow>
