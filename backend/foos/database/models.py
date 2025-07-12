@@ -111,7 +111,7 @@ Index("timeseries_player_id_rating_idx", TimeSeries.player_id, TimeSeries.rating
 
 
 class MinimalTimeSeriesPoint:
-    def __init__(self, date: datetime.date, player_id: str, name: str, rating: float):
+    def __init__(self, date: datetime.datetime, player_id: str, name: str, rating: float):
         self.date = date
         self.player_id = player_id
         self.name = name

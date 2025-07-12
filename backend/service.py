@@ -231,40 +231,27 @@ def add_player(player: models.PlayerCreate):
 @app.get("/timeseries/", response_model=list[dict[str, Any]])
 def read_ratings(season_id: int):
     with Session(db.engine) as session:
-        # Select the ratings each participating player ended at the end of each day
-        ranked_timeseries = select(
-            models.Game.date_trunc_day,
-            models.TimeSeries.player_id,
-            models.Player.name,
-            models.TimeSeries.rating,
-            func.row_number().over(
-                partition_by=(
-                    col(models.TimeSeries.player_id),
-                    col(models.Game.date_trunc_day)
-                ),
-                order_by=(
-                    desc(models.Game.date),
-                    desc(models.Game.id)
-                )
-            ).label("game_num")
-        ).select_from( # type: ignore
-            join(models.TimeSeries, models.Game)
-            .join(models.Player, models.TimeSeries.player_id == models.Player.id)
-        ).where(
-            models.Game.season_id == season_id
-        ).subquery()
-
-        eod_timeseries = (
+        eod_timeseries_query = (
             select(
-                ranked_timeseries.c.date_trunc_day,
-                ranked_timeseries.c.player_id,
-                ranked_timeseries.c.name,
-                ranked_timeseries.c.rating
+                models.Game.date_trunc_day,
+                models.TimeSeries.player_id,
+                models.Player.name,
+                models.TimeSeries.rating
             )
-            .select_from(ranked_timeseries)
-            .where(ranked_timeseries.c.game_num == 1)
+            .join(models.TimeSeries, models.TimeSeries.game_id == models.Game.id)
+            .join(models.Player, models.TimeSeries.player_id == models.Player.id)
+            .where(models.Game.season_id == season_id)
+            .order_by(
+                models.TimeSeries.player_id,
+                desc(models.Game.date_trunc_day),
+                desc(models.Game.date),
+                desc(models.Game.id)
+            )
+            .prefix_with(
+                f"DISTINCT ON ({models.TimeSeries.player_id}, {models.Game.date_trunc_day})"
+            )
         )
-        timeseries = session.exec(eod_timeseries).all()
+        timeseries = session.exec(eod_timeseries_query).all()
         timeseries_points = [models.MinimalTimeSeriesPoint(*ts) for ts in timeseries]
 
         # Group player rating snapshots by date
