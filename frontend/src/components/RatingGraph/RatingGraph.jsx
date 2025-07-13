@@ -1,4 +1,4 @@
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Dot } from "recharts";
 
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
@@ -73,6 +73,15 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+const CustomDot = (props) => {
+  const { cx, cy, stroke, value, fill, r, index, strokeWidth, points } = props;
+  let customFill = fill;
+  if (value !== undefined && (index === points.length - 1 || points.findLastIndex(p => p.value !== undefined) === index)) {
+    customFill = stroke;
+  }
+  return <Dot cx={cx} cy={cy} r={r} stroke={stroke} fill={customFill} strokeWidth={strokeWidth} />
+}
+
 const RatingGraph = ({data, playersStats}) => {
   const renderLineChart = (
     <ResponsiveContainer>
@@ -80,7 +89,7 @@ const RatingGraph = ({data, playersStats}) => {
         {
           playersStats.map(p => {
             return (
-              <Line type="linear" dataKey={p.name} stroke={p.color} connectNulls />
+              <Line type="linear" dataKey={p.name} stroke={p.color} connectNulls dot={<CustomDot />} />
             )
           })
         }
