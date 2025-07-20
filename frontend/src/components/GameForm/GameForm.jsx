@@ -98,13 +98,17 @@ const GameRecorder = ({players, refreshData}) => {
       if (participants.length != new Set(participants).size) {
         throw new Error("All positions must be filled by different players");
       }
-      if (isNaN(Number(formData.yellow_score)) || isNaN(Number(formData.black_score))) {
+
+      formData.yellow_score = Number(formData.yellow_score);
+      formData.black_score = Number(formData.black_score);
+
+      if (isNaN(formData.yellow_score) || isNaN(formData.black_score)) {
         throw new Error("Scores must be numbers");
       }
-      if (Number(formData.yellow_score) == 0 && Number(formData.black_score) == 0) {
+      if (formData.yellow_score == 0 && formData.black_score == 0) {
         throw new Error("Both teams' scores cannot be 0")
       }
-      if (Number(formData.yellow_score) == Number(formData.black_score)) {
+      if (formData.yellow_score == formData.black_score) {
         throw new Error("Scores cannot be the same");
       }
 
@@ -149,7 +153,7 @@ const GameRecorder = ({players, refreshData}) => {
 
   return (
     <>
-      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+      {errorMessage ? <Alert severity="error" sx={{ marginBottom: 2 }}>{errorMessage}</Alert> : null}
       <Container component="form" onSubmit={addGame}>
         <Grid container spacing={2}>
           <Grid size={{xs: 12, sm: 6}}>

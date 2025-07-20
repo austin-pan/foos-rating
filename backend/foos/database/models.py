@@ -10,12 +10,6 @@ class GameBase(SQLModel):
     black_offense: str = Field(foreign_key="player.id", index=True)
     black_defense: str = Field(foreign_key="player.id", index=True)
     black_score: int
-    season_id: int | None = Field(
-        default=None,
-        foreign_key="season.id",
-        ondelete="SET NULL",
-        index=True
-    )
 
 
 class GameCreate(GameBase):
@@ -53,6 +47,12 @@ class Game(GameBase, table=True):
     )
     date_trunc_day: datetime.datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    season_id: int | None = Field(
+        default=None,
+        foreign_key="season.id",
+        ondelete="SET NULL",
+        index=True
     )
 
     timeseries: list["TimeSeries"] = Relationship(back_populates="game", cascade_delete=True)

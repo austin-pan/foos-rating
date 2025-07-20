@@ -1,9 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 const readPlayers = async () => {
-  const response = await fetch(`${API_URL}/players/`, {
-    mode: "cors"
-  });
+  const response = await fetch(`${API_URL}/api/players/`);
 
   if (response.status >= 400) {
     console.log(response);
@@ -15,9 +13,7 @@ const readPlayers = async () => {
 }
 
 const readPlayersStats = async (seasonId) => {
-  const response = await fetch(`${API_URL}/players/stats/?season_id=${seasonId}`, {
-    mode: "cors"
-  });
+  const response = await fetch(`${API_URL}/api/players/stats/?season_id=${seasonId}`);
 
   if (response.status >= 400) {
     console.log(response);
@@ -29,13 +25,13 @@ const readPlayersStats = async (seasonId) => {
 }
 
 const addPlayer = async (player) => {
-  const response = await fetch(`${API_URL}/players/`, {
+  const response = await fetch(`${API_URL}/api/players/`, {
     method: "POST",
+    body: JSON.stringify(player),
+    credentials: "include",
     headers: {
       "Content-Type": "application/json"
-    },
-    body: JSON.stringify(player),
-    mode: "cors"
+    }
   });
 
   if (!response.ok) {

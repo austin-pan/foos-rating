@@ -1,13 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 const readGames = async (season_id) => {
-  const response = await fetch(`${API_URL}/games/?season_id=${season_id}`, {
-    mode: "cors"
-  });
+  const response = await fetch(`${API_URL}/api/games/?season_id=${season_id}`);
 
-  if (response.status >= 400) {
-    console.log(response);
-    throw new Error("server error");
+  if (!response.ok) {
+    throw new Error("Unable to read games");
   }
 
   const games = await response.json()
@@ -15,33 +12,33 @@ const readGames = async (season_id) => {
 }
 
 const addGame = async (game) => {
-  const response = await fetch(`${API_URL}/games/`, {
+  const response = await fetch(`${API_URL}/api/games/`, {
     method: "POST",
+    body: JSON.stringify(game),
+    credentials: "include",
     headers: {
       "Content-Type": "application/json"
-    },
-    body: JSON.stringify(game),
-    mode: "cors"
+    }
   });
 
   if (!response.ok) {
-    throw new Error("HTTP Error")
+    throw new Error("Unable to add game");
   }
-}
+};
 
 const deleteLatestGame = async () => {
-  const response = await fetch(`${API_URL}/games/latest/`, {
+  const response = await fetch(`${API_URL}/api/games/latest/`, {
     method: "DELETE",
-    mode: "cors"
+    credentials: "include"
   });
 
   if (!response.ok) {
-    throw new Error("HTTP Error");
+    throw new Error("Unable to delete latest game");
   }
-}
+};
 
 export default {
   readGames,
   addGame,
-  deleteLatestGame
-}
+  deleteLatestGame,
+};

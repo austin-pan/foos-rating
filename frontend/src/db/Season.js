@@ -1,9 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 const getCurrentSeason = async () => {
-  const response = await fetch(`${API_URL}/seasons/current`, {
-    mode: "cors"
-  });
+  const response = await fetch(`${API_URL}/api/seasons/current`);
 
   if (response.status >= 400) {
     console.log(response);

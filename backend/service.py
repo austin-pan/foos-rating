@@ -5,9 +5,10 @@ import os
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session, col, desc, func, select, join
+from fastapi.responses import JSONResponse
+from sqlmodel import Session, col, desc, select
 from sqlalchemy.orm import aliased
 
 from foos import color, database as db, rating
@@ -15,21 +16,35 @@ from foos.database import models
 
 
 load_dotenv()
+PST = ZoneInfo("America/Los_Angeles")
+SHARED_SECRET = os.getenv("SHARED_SECRET")
+if not SHARED_SECRET:
+    raise ValueError("Invalid shared secret")
+ORIGINS = os.getenv("ORIGINS")
+if not ORIGINS:
+    raise ValueError("Invalid origins")
 
 app = FastAPI()
 
-origins = os.getenv("ORIGINS")
-if not origins:
-    raise ValueError("Invalid origins")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins.split(","),
+    allow_origins=ORIGINS.split(","),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"]
 )
 
-PST = ZoneInfo("America/Los_Angeles")
+
+@app.middleware("http")
+async def verify_internal_token(request: Request, call_next):
+    token = request.headers.get("X-Auth-Token")
+    if token != SHARED_SECRET:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "Unauthorized: Invalid internal token"}
+        )
+    response = await call_next(request)
+    return response
 
 
 @app.on_event("startup")
@@ -197,7 +212,7 @@ def read_players():
         return players
 
 
-@app.get("/players/stats", response_model=list[models.RatedPlayerPublic])
+@app.get("/players/stats/", response_model=list[models.RatedPlayerPublic])
 def read_player_stats(season_id: int):
     with Session(db.engine) as session:
         player_to_stats = rating.get_player_stats(session, season_id)

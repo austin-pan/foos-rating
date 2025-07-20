@@ -8,16 +8,19 @@ import MatchHistory from "../../components/MatchHistory/MatchHistory.jsx";
 import PlayerForm from "../../components/PlayerForm/PlayerForm.jsx";
 import GameForm from "../../components/GameForm/GameForm.jsx";
 import Leaderboard from "../../components/Leaderboard/Leaderboard.jsx";
+import NavBar from "../../components/NavBar/NavBar.jsx";
 
 import Games from "../../db/Games.js";
 import TimeSeries from "../../db/TimeSeries.js";
 import Players from "../../db/Players.js";
 import Season from "../../db/Season.js";
-
 import styles from "./Home.module.scss";
+
 import Container from "@mui/material/Container";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId) => {
   const [games, timeseries, players, playersStats] = await Promise.all([
@@ -42,6 +45,8 @@ const Home = () => {
   const [playersStats, setPlayersStats] = useState([]);
   const [seasonId, setSeasonId] = useState(1);
 
+  const [user, setUser] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -58,9 +63,35 @@ const Home = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${API_URL}/user`, {
+          mode: "cors",
+          credentials: "include"
+        })
+        if (!res.ok) {
+          throw new Error("User not found");
+        }
+
+        const user = await res.json();
+        if (user.authenticated) {
+          setUser(user.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      }
+    }
+    fetchUser();
+  }, []);
+
   if (error) return <ErrorPage />;
   return (
-    <Container maxWidth="md" sx={{marginBottom: 20}}>
+    <>
+    <NavBar user={user} setUser={setUser} />
+    <Container maxWidth="md" sx={{ marginBottom: 20, position: "relative" }}>
       <Typography variant="h3" component="h1" marginY={4}>Leaderboard</Typography>
       {
         isLoading ?
@@ -87,21 +118,27 @@ const Home = () => {
         <MatchHistory games={games} playersStats={playersStats} />
       }
 
-      <Typography variant="h3" component="h1" marginY={4}>Forms</Typography>
-      <Typography variant="h4" component="h2" marginY={4}>Add Game</Typography>
       {
-        isLoading ?
-        <LoadingIcon /> :
-        <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
-      }
-
-      <Typography variant="h4" component="h2" marginY={4}>Add Player</Typography>
-      {
-        isLoading ?
-        <LoadingIcon /> :
-        <PlayerForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
+        user ?
+        <>
+          <Typography variant="h3" component="h1" marginY={4}>Forms</Typography>
+          <Typography variant="h4" component="h2" marginY={4}>Add Game</Typography>
+          {
+            isLoading ?
+            <LoadingIcon /> :
+            <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
+          }
+          <Typography variant="h4" component="h2" marginY={4}>Add Player</Typography>
+          {
+            isLoading ?
+            <LoadingIcon /> :
+            <PlayerForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
+          }
+        </> :
+        null
       }
     </Container>
+    </>
   )
 }
 
