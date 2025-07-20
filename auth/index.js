@@ -18,8 +18,7 @@ const corsOptions = {
   origin: process.env.ORIGIN,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type'],
-  credentials: true,
-  exposedHeaders: ['set-cookie'],
+  credentials: true
 };
 
 /* Middleware */
