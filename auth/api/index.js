@@ -57,14 +57,14 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: `${process.env.ORIGIN}/` }),
-  (req, res) => { res.redirect(`${process.env.ORIGIN}/`) }
+  passport.authenticate('google', { failureRedirect: `${process.env.HOME_URL}/` }),
+  (req, res) => { res.redirect(`${process.env.HOME_URL}/`) }
 );
 
 app.get('/auth/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) { return next(err); }
-    res.redirect(`${process.env.ORIGIN}/`);
+    res.redirect(`${process.env.HOME_URL}/`);
   });
 });
 
