@@ -41,7 +41,6 @@ app.use(session({
     secure: process.env.NODE_ENV !== 'development', // Only true in production
     sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
     maxAge: 60 * 60 * 24 * 30 * 1000, // 1 month
-    // path: '/'
   }
 }));
 app.use(passport.initialize());
@@ -89,6 +88,4 @@ app.get('/user', (req, res) => {
     // console.log(`Server running on port ${PORT}`);
 // });
 
-export default (req, res) => {
-  app(req, res);
-};
+export default app;
