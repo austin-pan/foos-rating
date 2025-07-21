@@ -3,6 +3,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 const serviceProxy = createProxyMiddleware({
   target: process.env.SERVICE_URL,
   changeOrigin: true,
+  followRedirects: true,
   pathRewrite: {
     '^/api': ''
   },
