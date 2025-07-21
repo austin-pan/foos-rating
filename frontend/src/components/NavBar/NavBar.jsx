@@ -36,7 +36,7 @@ const NavBar = ({ user, setUser }) => {
               fontWeight: "bold"
             }}
           >
-            QFoos
+            qfoos
           </Typography>
           {
             user ?
