@@ -21,6 +21,8 @@ const corsOptions = {
   credentials: true
 };
 
+app.set('trust proxy', 1); // Needed for secure cookies on Vercel
+
 /* Middleware */
 app.use(cors(corsOptions));
 
@@ -38,7 +40,7 @@ app.use(session({
     httpOnly: true,
     secure: process.env.NODE_ENV !== 'development', // Only true in production
     sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
-    maxAge: 60 * 60 * 24 * 30, // 1 month
+    maxAge: 60 * 60 * 24 * 30 * 1000, // 1 month
     // path: '/'
   }
 }));
