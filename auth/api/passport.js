@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const HOST_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.HOST_URL;
+const HOST_URL = process.env.HOST_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
 export default (passport) => {
   passport.use(new GoogleStrategy({
