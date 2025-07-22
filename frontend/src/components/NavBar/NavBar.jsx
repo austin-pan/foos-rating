@@ -1,3 +1,5 @@
+import { useContext } from "react";
+
 import { Box } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -6,18 +8,16 @@ import useScrollTrigger from '@mui/material/useScrollTrigger';
 
 import IconButton from "../IconButton/IconButton.jsx";
 import { GoogleIcon, LogoutIcon } from "../IconButton/Icons.jsx";
+import { AuthContext } from "../../context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const login = async () => {
+const handleLogin = async () => {
   window.location.href = `${API_URL}/auth/google`;
 }
 
-const logout = async () => {
-  window.location.href = `${API_URL}/auth/logout`;
-}
-
 const NavBar = ({ user, setUser }) => {
+  const { logout } = useContext(AuthContext);
   const trigger = useScrollTrigger({
     disableHysteresis: true,
     threshold: 0,
@@ -41,7 +41,7 @@ const NavBar = ({ user, setUser }) => {
           {
             user ?
             <IconButton onClick={() => logout(setUser)} icon={<LogoutIcon />} /> :
-            <IconButton onClick={() => login(setUser)} icon={<GoogleIcon />} />
+            <IconButton onClick={() => handleLogin(setUser)} icon={<GoogleIcon />} />
           }
         </Toolbar>
       </AppBar>

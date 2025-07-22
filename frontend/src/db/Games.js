@@ -11,13 +11,16 @@ const readGames = async (season_id) => {
   return games;
 }
 
-const addGame = async (game) => {
+const addGame = async (game, token) => {
+  if (!token) {
+    throw new Error("No token provided");
+  }
   const response = await fetch(`${API_URL}/api/games/`, {
     method: "POST",
     body: JSON.stringify(game),
-    credentials: "include",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
     }
   });
 
@@ -26,10 +29,15 @@ const addGame = async (game) => {
   }
 };
 
-const deleteLatestGame = async () => {
+const deleteLatestGame = async (token) => {
+  if (!token) {
+    throw new Error("No token provided");
+  }
   const response = await fetch(`${API_URL}/api/games/latest/`, {
     method: "DELETE",
-    credentials: "include"
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
   });
 
   if (!response.ok) {

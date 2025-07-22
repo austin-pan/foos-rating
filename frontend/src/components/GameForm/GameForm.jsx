@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+
 import Grid from '@mui/material/Grid';
-import Box from '@mui/material/Box';
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -8,6 +8,7 @@ import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 
+import { AuthContext } from "../../context/AuthContext.js";
 import Games from "../../db/Games.js";
 
 const positionIds = ["yellow_offense", "yellow_defense", "black_offense", "black_defense"];
@@ -66,6 +67,8 @@ const ScoreField = ({fieldName, label, formData, onFormChange}) => {
 }
 
 const GameRecorder = ({players, refreshData}) => {
+  const { token } = useContext(AuthContext);
+
   const [formData, setFormData] = useState({
     "yellow_offense": "",
     "yellow_defense": "",
@@ -115,7 +118,7 @@ const GameRecorder = ({players, refreshData}) => {
         throw new Error("Scores cannot be the same");
       }
 
-      await Games.addGame(formData);
+      await Games.addGame(formData, token);
       refreshData();
       setErrorMessage(null);
       setFormData({
@@ -131,7 +134,7 @@ const GameRecorder = ({players, refreshData}) => {
 
   const deleteLatestGame = async () => {
     try {
-      await Games.deleteLatestGame();
+      await Games.deleteLatestGame(token);
       showSnackbar("Game deleted");
       refreshData();
       setErrorMessage(null);

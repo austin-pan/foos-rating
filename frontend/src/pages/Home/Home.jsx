@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Icon from "@mdi/react";
 import { mdiSleep } from "@mdi/js";
 import Box from "@mui/material/Box";
@@ -9,6 +9,7 @@ import PlayerForm from "../../components/PlayerForm/PlayerForm.jsx";
 import GameForm from "../../components/GameForm/GameForm.jsx";
 import Leaderboard from "../../components/Leaderboard/Leaderboard.jsx";
 import NavBar from "../../components/NavBar/NavBar.jsx";
+import { AuthContext } from "../../context/AuthContext.js";
 
 import Games from "../../db/Games.js";
 import TimeSeries from "../../db/TimeSeries.js";
@@ -36,6 +37,8 @@ const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats,
 }
 
 const Home = () => {
+  const { token } = useContext(AuthContext);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -67,8 +70,9 @@ const Home = () => {
     const fetchUser = async () => {
       try {
         const res = await fetch(`${API_URL}/user`, {
-          mode: "cors",
-          credentials: "include"
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
         })
         if (!res.ok) {
           throw new Error("User not found");
@@ -85,7 +89,7 @@ const Home = () => {
       }
     }
     fetchUser();
-  }, []);
+  }, [token]);
 
   if (error) return <ErrorPage />;
   return (

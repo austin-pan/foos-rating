@@ -1,12 +1,11 @@
 import express from "express";
-import session from "express-session";
 import passport from "passport";
-import connectPgSimple from "connect-pg-simple";
 import cors from 'cors';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
 import googleAuth from "./passport.js";
-import { methodAuth } from "./middleware.js";
+import { jwtAuth, methodAuth } from "./middleware.js";
 import serviceProxy from "./proxy.js";
 
 dotenv.config();
@@ -17,34 +16,11 @@ const app = express();
 const corsOptions = {
   origin: process.env.ORIGIN,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-app.set('trust proxy', 1); // Needed for secure cookies on Vercel
-
-/* Middleware */
 app.use(cors(corsOptions));
-
-const pgSession = connectPgSimple(session);
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: new pgSession({
-    conString: process.env.DB_URL,
-    createTableIfMissing: true,
-    tableName: "session"
-  }),
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development', // Only true in production
-    sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
-    maxAge: 60 * 60 * 24 * 30 * 1000, // 1 month
-  }
-}));
 app.use(passport.initialize());
-app.use(passport.session());
 googleAuth(passport);
 
 app.use('/api', methodAuth, serviceProxy);
@@ -54,38 +30,35 @@ app.get('/', (req, res) => {
 });
 
 app.get('/auth/google',
-  passport.authenticate('google', { scope: ['email'] })
+  passport.authenticate('google', { scope: ['email'], session: false })
 );
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: `${process.env.HOME_URL}/` }),
-  (req, res) => { res.redirect(`${process.env.HOME_URL}/`) }
+  passport.authenticate('google', { failureRedirect: `${process.env.HOME_URL}/`, session: false }),
+  (req, res) => {
+    const token = jwt.sign(
+      { user: req.user },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    res.redirect(`${process.env.ORIGIN}/foos-rating/auth/success?token=${token}`)
+  }
 );
 
-app.get('/auth/logout', (req, res, next) => {
-  req.logout((err) => {
-    if (err) { return next(err); }
-    res.redirect(`${process.env.HOME_URL}/`);
-  });
-});
-
-app.get('/user', (req, res) => {
-  if (req.user) {
+app.get('/user',
+  jwtAuth,
+  (req, res) => {
     res.json({
       authenticated: true,
       user: req.user
     });
-  } else {
+  },
+  (err, req, res, next) => {
     res.json({
       authenticated: false,
       error: 'User not found'
-    })
+    });
   }
-});
-
-// const PORT = 4000;
-// app.listen(PORT, () => {
-    // console.log(`Server running on port ${PORT}`);
-// });
+);
 
 export default app;
