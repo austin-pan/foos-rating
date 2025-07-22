@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import ScopedCssBaseline from '@mui/material/ScopedCssBaseline';
 
 import Home from "./pages/Home/Home.jsx";
@@ -13,7 +13,8 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ScopedCssBaseline />
     <AuthProvider>
-      <Router basename="/foos-rating">
+      {/* Have to use a hash router for GitHub static hosting */}
+      <Router>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/success" element={<AuthSuccess />} />

@@ -41,7 +41,7 @@ app.get('/auth/google/callback',
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-    res.redirect(`${process.env.ORIGIN}/foos-rating/auth/success?token=${token}`)
+    res.redirect(`${process.env.HOME_URL}/#/auth/success?token=${token}`)
   }
 );
 
