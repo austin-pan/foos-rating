@@ -105,6 +105,9 @@ const GameRecorder = ({players, refreshData}) => {
       if (isNaN(formData.yellow_score) || isNaN(formData.black_score)) {
         throw new Error("Scores must be numbers");
       }
+      if (formData.yellow_score < 0 || formData.black_score < 0) {
+        throw new Error("Scores cannot be negative");
+      }
       if (formData.yellow_score == 0 && formData.black_score == 0) {
         throw new Error("Both teams' scores cannot be 0")
       }
