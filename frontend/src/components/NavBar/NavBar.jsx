@@ -25,7 +25,7 @@ const NavBar = ({ user, setUser }) => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="fixed" sx={{ zIndex: 10 }} elevation={trigger ? 4 : 0}>
+      <AppBar position="fixed" sx={{ zIndex: 2000 }} elevation={trigger ? 4 : 0}>
         <Toolbar>
           <Typography
             variant="h6"

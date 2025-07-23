@@ -108,7 +108,7 @@ const RatingGraph = ({data, playersStats}) => {
   );
 
   return (
-    <Box sx={{ width: "95%", aspectRatio: "16 / 9", position: "relative", zIndex: 1 }}>
+    <Box sx={{ width: "95%", aspectRatio: "16 / 9", position: "relative", zIndex: 1500 }}>
       {renderLineChart}
     </Box>
   );
