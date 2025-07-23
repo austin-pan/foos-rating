@@ -75,9 +75,13 @@ const MatchHistory = ({games, playersStats}) => {
           </colgroup>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ textAlign: "right" }}>Yellow</TableCell>
+              <TableCell sx={{ textAlign: "right" }}>
+                <Typography>Yellow</Typography>
+              </TableCell>
               <TableCell></TableCell>
-              <TableCell sx={{ textAlign: "left" }}>Black</TableCell>
+              <TableCell sx={{ textAlign: "left" }}>
+                <Typography>Black</Typography>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
