@@ -40,7 +40,8 @@ const NavBar = ({ user, setUser }) => {
           </Typography>
           {
             user ?
-            <IconButton onClick={() => logout(setUser)} icon={<LogoutIcon />} /> :
+            // Reload isn't necessary but gives feedback for logging out
+            <IconButton onClick={() => {logout(); window.location.reload(false);}} icon={<LogoutIcon />} /> :
             <IconButton onClick={() => handleLogin(setUser)} icon={<GoogleIcon />} />
           }
         </Toolbar>
