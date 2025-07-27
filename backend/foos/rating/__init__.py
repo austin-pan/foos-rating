@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 
 from sqlmodel import Integer, Session, cast, col, desc, func, join, select
 from sqlalchemy import Select
@@ -17,7 +17,7 @@ class Team:
         self.score = score
 
 class FoosGame:
-    def __init__(self, game_date: date, team_a: Team, team_b: Team):
+    def __init__(self, game_date: datetime.date, team_a: Team, team_b: Team):
         self.date = game_date
         self.team_a = team_a
         self.team_b = team_b
@@ -31,27 +31,38 @@ class PlayerStats:
         self.win_rate = 0 if self.num_games == 0 else self.num_wins / self.num_games
 
 
-def get_latest_ratings_query(season_id: int) -> Select[tuple[str, float]]:
-    return (
+def get_ratings_query(season_id: int, date: datetime.date | None = None) -> Select[tuple[str, float]]:
+    query = (
         select(models.TimeSeries.player_id, models.TimeSeries.rating)
         .join(models.Game)
         .where(models.Game.season_id == season_id)
-        .order_by(models.TimeSeries.player_id, desc(models.Game.date), desc(models.Game.id))
+        .order_by(
+            models.TimeSeries.player_id,
+            desc(models.Game.date),
+            desc(models.Game.game_number)
+        )
         .prefix_with(f"DISTINCT ON ({models.TimeSeries.player_id})")
     )
+    if date:
+        query = query.where(models.Game.date <= date)
+    return query
 
 
-def get_player_ratings(session: Session, player_ids: list[str], season_id: int) -> dict[str, float]:
-    latest_ratings: dict[str, float] = dict(
-        session.exec(
-            get_latest_ratings_query(season_id)
-            .where(col(models.TimeSeries.player_id).in_(player_ids))
-        ).all()
-    )
-    for player_id in player_ids:
-        if player_id not in latest_ratings:
-            latest_ratings[player_id] = BASE_RATING
-    return latest_ratings
+def get_player_ratings(session: Session, season_id: int, *, player_ids: list[str] | None = None, date: datetime.date | None = None) -> dict[str, float]:
+    """
+    Get the ratings for the given player IDs and season.
+    If player_ids is None, get the ratings for all players.
+    If date is None, get the ratings for the latest game.
+    """
+    ratings_query = get_ratings_query(season_id, date)
+    if player_ids:
+        ratings_query = ratings_query.where(col(models.TimeSeries.player_id).in_(player_ids))
+    player_id_to_rating: dict[str, float] = dict(session.exec(ratings_query).all())
+    if player_ids:
+        for player_id in player_ids:
+            if player_id not in player_id_to_rating:
+                player_id_to_rating[player_id] = BASE_RATING
+    return player_id_to_rating
 
 
 def get_player_stats(session: Session, season_id: int) -> dict[models.Player, PlayerStats]:
@@ -67,7 +78,7 @@ def get_player_stats(session: Session, season_id: int) -> dict[models.Player, Pl
         )
         .group_by(models.TimeSeries.player_id)
     ).subquery("stats")
-    ratings_query = get_latest_ratings_query(season_id).subquery("ratings")
+    ratings_query = get_ratings_query(season_id).subquery("ratings")
 
     full_query = (
         select(
@@ -101,6 +112,9 @@ def update_ratings(
     player_id_to_rating: dict[str, float],
     method: str
 ) -> dict[str, float]:
+    """
+    Update the ratings for the given game and player ratings.
+    """
     player_id_to_rating = player_id_to_rating.copy()
     game = FoosGame(
         game_date=db_game.date,
@@ -124,8 +138,8 @@ def update_ratings(
     rating_diff = win_team_rating - lose_team_rating
     actual_score_diff = win_team.score - lose_team.score
 
-    if method == "scaled_translated_differential":
-        d = delta.scaled_translated_differential(
+    if method == "min_scaled_flat_score":
+        d = delta.min_scaled_flat_score(
             actual_score_diff=actual_score_diff,
             rating_diff=rating_diff,
             win_score=win_team.score
@@ -147,3 +161,43 @@ def update_ratings(
     player_id_to_rating[lose_team.defense] -= d
 
     return player_id_to_rating
+
+
+def calculate_timeseries_points(
+    games: list[models.Game],
+    player_id_to_rating: dict[str, float],
+    method: str
+) -> list[models.TimeSeries]:
+    """
+    Calculate the timeseries points for the given games and player ratings.
+    """
+    timeseries_points = []
+    for game in games:
+        # Extract player IDs from the current game
+        game_player_ids = [
+            game.yellow_offense,
+            game.yellow_defense,
+            game.black_offense,
+            game.black_defense
+        ]
+        # Backfill new players
+        for player_id in game_player_ids:
+            if player_id not in player_id_to_rating:
+                player_id_to_rating[player_id] = BASE_RATING
+        # Take subset of ratings for players in this game
+        game_player_id_to_rating = {
+            player_id: player_id_to_rating[player_id]
+            for player_id in game_player_ids
+        }
+        player_id_to_updated_rating = update_ratings(game, game_player_id_to_rating, method)
+        for player_id, updated_rating in player_id_to_updated_rating.items():
+            db_timeseries_point = models.TimeSeries(
+                game_id=game.id,
+                player_id=player_id,
+                rating=updated_rating,
+                delta=updated_rating - player_id_to_rating[player_id],
+                win=updated_rating > player_id_to_rating[player_id]
+            )
+            timeseries_points.append(db_timeseries_point)
+        player_id_to_rating.update(player_id_to_updated_rating)
+    return timeseries_points

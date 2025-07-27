@@ -13,19 +13,17 @@ class GameBase(SQLModel):
 
 
 class GameCreate(GameBase):
-    pass
+    iso_date: str
 
 
 class GamePublic(GameBase):
     id: int
     date: datetime.datetime
-    date_trunc_day: datetime.datetime
 
 
 class GameDeltaPublic(GameBase):
     id: int
     date: datetime.datetime
-    date_trunc_day: datetime.datetime
 
     yellow_offense_rating: int
     yellow_offense_delta: int
@@ -42,10 +40,8 @@ class GameDeltaPublic(GameBase):
 
 class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    game_number: int | None = Field(unique=True)
     date: datetime.datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False)
-    )
-    date_trunc_day: datetime.datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     season_id: int | None = Field(
@@ -55,11 +51,23 @@ class Game(GameBase, table=True):
         index=True
     )
 
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    removed_at: datetime.datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+
     timeseries: list["TimeSeries"] = Relationship(back_populates="game", cascade_delete=True)
     season: "Season" = Relationship(back_populates="games")
 
 Index("game_date_idx", Game.date)
-Index("game_date_trunc_day_idx", Game.date_trunc_day)
 
 
 ## Player models

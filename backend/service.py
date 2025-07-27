@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlmodel import Session, col, desc, select
+from sqlmodel import Session, col, desc, select, func
 from sqlalchemy.orm import aliased
 
 from foos import color, database as db, rating
@@ -74,38 +74,75 @@ def create_game(game: models.GameCreate):
         if not current_season or not current_season.id:
             raise HTTPException(status_code=400, detail="No active season")
 
-        now = datetime.datetime.now(PST)
+        num_games = session.exec(
+            select(func.count(models.Game.id))
+        ).one()
+        game_date = (
+            datetime.datetime.fromisoformat(game.iso_date)
+            .astimezone(PST)
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+        )
+
+        games_affected = []
+        today = datetime.datetime.now(PST).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Insert game if it's in the past
+        if num_games > 0 and game_date < today:
+            # Find the closest game with date earlier than game_date
+            closest_earlier_game = session.exec(
+                select(models.Game)
+                .where(models.Game.date <= game_date)
+                .order_by(desc(models.Game.game_number))
+                .limit(1)
+            ).first()
+            insert_game_number = closest_earlier_game.game_number + 1
+
+            # Delete stale timeseries points
+            stale_timeseries_points = session.exec(
+                select(models.TimeSeries)
+                .join(models.Game)
+                .where(models.Game.game_number >= insert_game_number)
+            ).all()
+            for stale_timeseries_point in stale_timeseries_points:
+                session.delete(stale_timeseries_point)
+
+            # Bump game numbers
+            stale_games = session.exec(
+                select(models.Game)
+                .where(models.Game.game_number >= insert_game_number)
+                .order_by(desc(models.Game.game_number))
+            ).all()
+            if len(stale_games) > 0:
+                for stale_game in stale_games:
+                    stale_game.game_number += 1
+                    session.add(stale_game)
+                    session.commit()
+                    session.refresh(stale_game)
+                games_affected.extend(stale_games)
+        else:
+            insert_game_number = num_games + 1
+
         db_game = models.Game.model_validate(game, update={
             "season_id": current_season.id,
-            "date": now,
-            "date_trunc_day": now.replace(hour=0, minute=0, second=0, microsecond=0)
+            "date": game_date,
+            "game_number": insert_game_number
         })
+        games_affected.append(db_game)
+        games_affected = games_affected[::-1]
 
         session.add(db_game)
         session.commit()
 
-        game_player_ids = [
-            db_game.yellow_offense,
-            db_game.yellow_defense,
-            db_game.black_offense,
-            db_game.black_defense
-        ]
-        player_id_to_current_rating = rating.get_player_ratings(
-            session, game_player_ids, current_season.id
+        player_id_to_snapshot_rating = rating.get_player_ratings(
+            session,
+            current_season.id,
+            date=game_date,
         )
-        player_id_to_updated_rating = rating.update_ratings(
-            db_game, player_id_to_current_rating, current_season.rating_method
+        timeseries_points = rating.calculate_timeseries_points(
+            games_affected,
+            player_id_to_snapshot_rating,
+            current_season.rating_method
         )
-        for player_id, updated_rating in player_id_to_updated_rating.items():
-            db_timeseries_point = models.TimeSeries(
-                game_id=db_game.id,
-                player_id=player_id,
-                rating=updated_rating,
-                delta=updated_rating - player_id_to_current_rating[player_id],
-                win=updated_rating > player_id_to_current_rating[player_id]
-            )
-            session.add(db_timeseries_point)
-
+        session.add_all(timeseries_points)
         session.commit()
         session.refresh(db_game)
         return db_game
@@ -153,7 +190,7 @@ def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, l
                 (models.Game.black_defense == tbd.player_id)
             )
             .where(models.Game.season_id == season_id)
-            .order_by(desc(col(models.Game.date)), desc(col(models.Game.id)))
+            .order_by(desc(col(models.Game.date)), desc(col(models.Game.game_number)))
             .limit(limit)
             .offset(offset)
         )
@@ -181,7 +218,7 @@ def delete_latest_game():
     with Session(db.engine) as session:
         db_game = session.exec(
             select(models.Game)
-            .order_by(desc(col(models.Game.date)), desc(col(models.Game.id)))
+            .order_by(desc(col(models.Game.date)), desc(col(models.Game.game_number)))
         ).first()
         if not db_game:
             raise HTTPException(status_code=404, detail="Game not found")
@@ -243,12 +280,12 @@ def add_player(player: models.PlayerCreate):
         return player_db
 
 
-@app.get("/timeseries/", response_model=list[dict[str, Any]])
+@app.get("/timeseries/day/", response_model=list[dict[str, Any]])
 def read_ratings(season_id: int):
     with Session(db.engine) as session:
         eod_timeseries_query = (
             select(
-                models.Game.date_trunc_day,
+                models.Game.date,
                 models.TimeSeries.player_id,
                 models.Player.name,
                 models.TimeSeries.rating
@@ -258,12 +295,11 @@ def read_ratings(season_id: int):
             .where(models.Game.season_id == season_id)
             .order_by(
                 models.TimeSeries.player_id,
-                desc(models.Game.date_trunc_day),
                 desc(models.Game.date),
-                desc(models.Game.id)
+                desc(models.Game.game_number)
             )
             .prefix_with(
-                f"DISTINCT ON ({models.TimeSeries.player_id}, {models.Game.date_trunc_day})"
+                f"DISTINCT ON ({models.TimeSeries.player_id}, {models.Game.date})"
             )
         )
         timeseries = session.exec(eod_timeseries_query).all()

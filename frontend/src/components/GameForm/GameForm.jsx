@@ -1,5 +1,7 @@
 import { useState, useContext } from "react";
 
+import dayjs from "dayjs";
+
 import Grid from '@mui/material/Grid';
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
@@ -7,6 +9,9 @@ import TextField from "@mui/material/TextField";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import { AuthContext } from "../../context/AuthContext.js";
 import Games from "../../db/Games.js";
@@ -66,6 +71,26 @@ const ScoreField = ({fieldName, label, formData, onFormChange}) => {
   )
 }
 
+const DatePickerField = ({fieldName, label, formData, onFormChange, sx}) => {
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <DatePicker
+        label={label}
+        value={formData[fieldName]}
+        onChange={(newValue) => onFormChange(fieldName, newValue)}
+        sx={sx}
+        slotProps={{
+          textField: {
+            size: "small",
+            margin: "dense"
+          }
+        }}
+      />
+    </LocalizationProvider>
+  )
+}
+
+
 const GameRecorder = ({players, refreshData}) => {
   const { token } = useContext(AuthContext);
 
@@ -75,7 +100,9 @@ const GameRecorder = ({players, refreshData}) => {
     "yellow_score": 0,
     "black_offense": "",
     "black_defense": "",
-    "black_score": 0
+    "black_score": 0,
+    "iso_date": null,
+    "date": dayjs()
   });
 
   const [errorMessage, setErrorMessage] = useState(null);
@@ -101,7 +128,11 @@ const GameRecorder = ({players, refreshData}) => {
       if (participants.length != new Set(participants).size) {
         throw new Error("All positions must be filled by different players");
       }
+      if (formData.date == null) {
+        throw new Error("Date is required");
+      }
 
+      formData.iso_date = formData.date.toISOString();
       formData.yellow_score = Number(formData.yellow_score);
       formData.black_score = Number(formData.black_score);
 
@@ -118,13 +149,16 @@ const GameRecorder = ({players, refreshData}) => {
         throw new Error("Scores cannot be the same");
       }
 
+      console.log(formData);
       await Games.addGame(formData, token);
       refreshData();
       setErrorMessage(null);
       setFormData({
         ...formData,
         "yellow_score": 0,
-        "black_score": 0
+        "black_score": 0,
+        "iso_date": null,
+        "date": dayjs()
       });
       showSnackbar("Game added");
     } catch (e) {
@@ -144,7 +178,11 @@ const GameRecorder = ({players, refreshData}) => {
   }
 
   const onFormChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    onKVFormChange(e.target.name, e.target.value);
+  }
+
+  const onKVFormChange = (k, v) => {
+    setFormData({ ...formData, [k]: v });
   }
 
   const onPlayerChange = (e) => {
@@ -162,6 +200,9 @@ const GameRecorder = ({players, refreshData}) => {
       {errorMessage ? <Alert severity="error" sx={{ marginBottom: 2 }}>{errorMessage}</Alert> : null}
       <Container component="form" onSubmit={addGame}>
         <Grid container spacing={2}>
+          <Grid offset={{xs: 0, sm: 3}} size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
+            <DatePickerField fieldName="date" label="Date" formData={formData} onFormChange={onKVFormChange} sx={{ flexGrow: 1 }} />
+          </Grid>
           <Grid size={{xs: 12, sm: 6}}>
             <PlayersSelect fieldName="yellow_offense" label="Yellow Offense" formData={formData} onFormChange={onPlayerChange} players={players} />
             <PlayersSelect fieldName="yellow_defense" label="Yellow Defense" formData={formData} onFormChange={onPlayerChange} players={players} />
@@ -175,7 +216,7 @@ const GameRecorder = ({players, refreshData}) => {
         </Grid>
 
         <Grid container spacing={2} sx={{ marginTop: 2 }}>
-          <Grid size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
+          <Grid size={{xs: 12, sm: 8}} sx={{ display: 'flex' }}>
             <Button
               type="submit"
               variant="contained"
@@ -184,7 +225,7 @@ const GameRecorder = ({players, refreshData}) => {
               Add Game
             </Button>
           </Grid>
-          <Grid size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
+          <Grid size={{xs: 12, sm: 4}} sx={{ display: 'flex' }}>
             <Button
               onClick={deleteLatestGame}
               variant="outlined"

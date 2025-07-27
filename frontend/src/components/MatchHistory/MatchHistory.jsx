@@ -12,14 +12,18 @@ import Box from '@mui/material/Box';
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 import { dateFormatter } from "../../utils.js";
 
-const PlayerDelta = ({player, delta, direction = "row"}) => {
+const PlayerDelta = ({player, rating, delta, direction = "row"}) => {
   const color = delta > 0 ? "darkgreen" : "darkred";
   const symbol = delta > 0 ? "▲" : "▼";
+  const beforeRating = rating - delta;
   return (
     <Stack direction={direction} spacing={1}>
       <ColoredPlayerName player={player} />
       <Typography sx={{ color: color, opacity: 0.5 }}>
         {symbol}{Math.abs(delta)}
+      </Typography>
+      <Typography sx={{ opacity: 0.5 }}>
+        {beforeRating}
       </Typography>
     </Stack>
   )
@@ -88,9 +92,12 @@ const MatchHistory = ({games, playersStats}) => {
             {games.map((game) => (
               <TableRow key={game.id}>
                 <TableCell>
-                  <Stack direction="column" alignItems="end" spacing={1} sx={{ fontSize: "medium"}}>
-                    <PlayerDelta player={playerIdToStats[game.yellow_offense]} delta={game.yellow_offense_delta} />
-                    <PlayerDelta player={playerIdToStats[game.yellow_defense]} delta={game.yellow_defense_delta} />
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="right">
+                    <Stack direction="column" alignItems="end" spacing={1} sx={{ fontSize: "medium"}}>
+                      <PlayerDelta player={playerIdToStats[game.yellow_offense]} rating={game.yellow_offense_rating} delta={game.yellow_offense_delta} />
+                      <PlayerDelta player={playerIdToStats[game.yellow_defense]} rating={game.yellow_defense_rating} delta={game.yellow_defense_delta} />
+                    </Stack>
+                    <Typography variant="body2" sx={{ fontSize: "small" }}>{Math.round(((game.yellow_offense_rating - game.yellow_offense_delta) + (game.yellow_defense_rating - game.yellow_defense_delta)) / 2)}</Typography>
                   </Stack>
                 </TableCell>
                 <TableCell>
@@ -100,9 +107,12 @@ const MatchHistory = ({games, playersStats}) => {
                   </Stack>
                 </TableCell>
                 <TableCell>
-                  <Stack direction="column" alignItems="start" spacing={1} sx={{ fontSize: "medium" }}>
-                    <PlayerDelta player={playerIdToStats[game.black_offense]} delta={game.black_offense_delta} direction="row-reverse" />
-                    <PlayerDelta player={playerIdToStats[game.black_defense]} delta={game.black_defense_delta} direction="row-reverse" />
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="left">
+                    <Typography variant="body2" sx={{ fontSize: "small", textAlign: "left" }}>{Math.round(((game.black_offense_rating - game.black_offense_delta) + (game.black_defense_rating - game.black_defense_delta)) / 2)}</Typography>
+                    <Stack direction="column" alignItems="start" spacing={1} sx={{ fontSize: "medium" }}>
+                      <PlayerDelta player={playerIdToStats[game.black_offense]} rating={game.black_offense_rating} delta={game.black_offense_delta} direction="row-reverse" />
+                      <PlayerDelta player={playerIdToStats[game.black_defense]} rating={game.black_defense_rating} delta={game.black_defense_delta} direction="row-reverse" />
+                    </Stack>
                   </Stack>
                 </TableCell>
               </TableRow>

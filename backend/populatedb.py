@@ -11,11 +11,12 @@ from foos.database import models
 from foos import rating
 
 def populate_db():
-    game_data = pd.read_csv(sys.argv[1])
+    game_data = pd.read_csv(sys.argv[1]).sort_values(by="game_number", ascending=True)
     game_data["date"] = pd.to_datetime(game_data["date"], format="ISO8601", utc=False)
-    # game_data["date"].iloc[:270] = game_data["date"].iloc[:270].dt.tz_localize(None).dt.tz_localize(ZoneInfo("America/Los_Angeles"))
-    # game_data["date"] = game_data["date"].dt.tz_convert(ZoneInfo("America/Los_Angeles"))
-    # game_data["date_trunc_day"] = game_data["date"].dt.floor("D")
+    game_data["created_at"] = pd.to_datetime(game_data["created_at"], format="ISO8601", utc=False)
+    game_data["updated_at"] = pd.to_datetime(game_data["updated_at"], format="ISO8601", utc=False)
+    game_data["removed_at"] = pd.to_datetime(game_data["removed_at"], format="ISO8601", utc=False)
+    # game_data["date"] = game_data["date"].dt.tz_convert(ZoneInfo("America/Los_Angeles")).dt.floor("D")
     print(game_data)
 
     player_data: list[str] = pd.concat(
@@ -76,14 +77,17 @@ def populate_db():
         for _, game in tqdm(game_data.iterrows()):
             db_game = models.Game(
                 date=game[["date"]].item(),
-                date_trunc_day=game[["date_trunc_day"]].item(),
+                game_number=game[["game_number"]].item(),
                 yellow_offense=game[["yellow_offense"]].item(),
                 yellow_defense=game[["yellow_defense"]].item(),
                 yellow_score=int(game[["yellow_score"]].item()),
                 black_offense=game[["black_offense"]].item(),
                 black_defense=game[["black_defense"]].item(),
                 black_score=int(game[["black_score"]].item()),
-                season_id=int(game[["season_id"]].item())
+                season_id=int(game[["season_id"]].item()),
+                created_at=game[["created_at"]].item(),
+                updated_at=game[["updated_at"]].item(),
+                removed_at=game[["removed_at"]].item() if not pd.isna(game[["removed_at"]].item()) else None
             )
             games_to_upload.append(db_game)
         session.add_all(games_to_upload)

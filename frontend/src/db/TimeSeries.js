@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 const readTimeSeries = async (seasonId) => {
-  const response = await fetch(`${API_URL}/api/timeseries/?season_id=${seasonId}`);
+  const response = await fetch(`${API_URL}/api/timeseries/day/?season_id=${seasonId}`);
 
   if (response.status >= 400) {
     console.log(response);

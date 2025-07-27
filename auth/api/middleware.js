@@ -9,7 +9,7 @@ const publicRoutes = [
   { path: new RegExp('^/players/?$'), methods: ['GET', 'OPTIONS'] },
   { path: new RegExp('^/players/stats/?$'), methods: ['GET', 'OPTIONS'] },
   { path: new RegExp('^/seasons/current/?$'), methods: ['GET', 'OPTIONS'] },
-  { path: new RegExp('^/timeseries/?$'), methods: ['GET', 'OPTIONS'] }
+  { path: new RegExp('^/timeseries/day/?$'), methods: ['GET', 'OPTIONS'] }
 ];
 
 const jwtAuth = (req, res, next) => {
