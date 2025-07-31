@@ -148,6 +148,84 @@ def create_game(game: models.GameCreate):
         return db_game
 
 
+@app.post("/games/move/")
+def move_game(game_id: int, delta: int):
+    if delta == 0:
+        raise HTTPException(status_code=400, detail="Invalid delta")
+
+    with Session(db.engine) as session:
+        db_game = session.exec(
+            select(models.Game)
+            .where(models.Game.id == game_id)
+        ).first()
+        if not db_game:
+            raise HTTPException(status_code=404, detail="Game not found")
+
+        src_game_number = int(db_game.game_number)
+        dst_game_number = src_game_number + delta
+
+        # Isolate game getting moved
+        db_game.game_number = -1
+        session.add(db_game)
+        session.commit()
+        session.refresh(db_game)
+
+        # Delete stale timeseries points
+        stale_timeseries_points = session.exec(
+            select(models.TimeSeries)
+            .join(models.Game)
+            .where(models.Game.game_number >= min(src_game_number, dst_game_number))
+        ).all()
+        for stale_timeseries_point in stale_timeseries_points:
+            session.delete(stale_timeseries_point)
+        session.commit()
+
+        # Move games around
+        affected_games = session.exec(
+            select(models.Game)
+            .where(models.Game.game_number >= min(src_game_number, dst_game_number))
+            .order_by(desc(models.Game.game_number))
+        ).all()
+        shift_games = [
+            affected_game
+            for affected_game in affected_games
+            if affected_game.game_number >= min(src_game_number, dst_game_number)
+            and affected_game.game_number <= max(src_game_number, dst_game_number)
+        ]
+        # Shift game numbers
+        for shift_game in shift_games:
+            if shift_game.game_number != src_game_number:
+                shift_game.game_number += -1 if delta > 0 else 1
+                session.add(shift_game)
+                session.commit()
+                session.refresh(shift_game)
+        # Move src game
+        db_game.game_number = dst_game_number
+        session.add(db_game)
+        session.commit()
+        session.refresh(db_game)
+
+        # Recalculate timeseries points
+        current_season = session.exec(
+            select(models.Season)
+            .where(models.Season.active)
+        ).one()
+        player_id_to_snapshot_rating = rating.get_player_ratings(
+            session,
+            current_season.id,
+            date=db_game.date
+        )
+        timeseries_points = rating.calculate_timeseries_points(
+            affected_games,
+            player_id_to_snapshot_rating,
+            current_season.rating_method
+        )
+        session.add_all(timeseries_points)
+        session.commit()
+
+        return db_game
+
+
 @app.get("/games/", response_model=list[models.GameDeltaPublic])
 def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, le=100)):
     with Session(db.engine) as session:
@@ -190,7 +268,7 @@ def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, l
                 (models.Game.black_defense == tbd.player_id)
             )
             .where(models.Game.season_id == season_id)
-            .order_by(desc(col(models.Game.date)), desc(col(models.Game.game_number)))
+            .order_by(desc(col(models.Game.game_number)))
             .limit(limit)
             .offset(offset)
         )
@@ -218,7 +296,7 @@ def delete_latest_game():
     with Session(db.engine) as session:
         db_game = session.exec(
             select(models.Game)
-            .order_by(desc(col(models.Game.date)), desc(col(models.Game.game_number)))
+            .order_by(desc(col(models.Game.game_number)))
         ).first()
         if not db_game:
             raise HTTPException(status_code=404, detail="Game not found")

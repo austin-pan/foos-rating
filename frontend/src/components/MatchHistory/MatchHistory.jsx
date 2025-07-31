@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,6 +13,10 @@ import Box from '@mui/material/Box';
 
 import ColoredPlayerName from "../ColoredPlayerName/ColoredPlayerName";
 import { dateFormatter } from "../../utils.js";
+import ReorderButtons from "./ReorderButtons";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import Games from "../../db/Games";
 
 const PlayerDelta = ({player, rating, delta, direction = "row"}) => {
   const color = delta > 0 ? "darkgreen" : "darkred";
@@ -44,7 +50,10 @@ const GameScore = ({yellowScore, blackScore}) => {
   </Stack>
 }
 
-const MatchHistory = ({games, playersStats}) => {
+const MatchHistory = ({ games, playersStats, refreshData }) => {
+  const { user, token } = useContext(AuthContext);
+  const [hoveredRow, setHoveredRow] = useState(null);
+
   if (games.length == 0) {
     return (
       <Box display="flex" justifyContent="center">
@@ -53,13 +62,31 @@ const MatchHistory = ({games, playersStats}) => {
     )
   }
 
+  const handleRowHover = (index) => (event) => {
+    setHoveredRow(index);
+  };
+
+  const handleRowLeave = () => {
+    setHoveredRow(null);
+  };
+
+  const handleMoveUp = async (index) => {
+    await Games.moveGame(games[index].id, 1, token);
+    refreshData();
+  };
+
+  const handleMoveDown = async (index) => {
+    await Games.moveGame(games[index].id, -1, token);
+    refreshData();
+  };
+
   const playerIdToStats = {};
   for (const playerStats of playersStats) {
     playerIdToStats[playerStats.id] = playerStats;
   }
 
   return (
-    <Paper elevation={3} sx={{ maxWidth: '550px', margin: 'auto' }}>
+    <Paper elevation={3} sx={{ maxWidth: '600px', margin: 'auto' }}>
       <TableContainer
         sx={{
           maxHeight: '400px',
@@ -73,9 +100,9 @@ const MatchHistory = ({games, playersStats}) => {
           aria-label="match history table"
         >
           <colgroup>
-            <col style={{width:'40%'}}/>
-            <col style={{width:'20%'}}/>
-            <col style={{width:'40%'}}/>
+            <col style={{width: '40%'}}/>
+            <col style={{width: '20%'}}/>
+            <col style={{width: '40%'}}/>
           </colgroup>
           <TableHead>
             <TableRow>
@@ -89,9 +116,32 @@ const MatchHistory = ({games, playersStats}) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {games.map((game) => (
-              <TableRow key={game.id}>
-                <TableCell>
+            {games.map((game, index) => (
+              <TableRow
+                key={game.id}
+                onMouseEnter={handleRowHover(index)}
+                onMouseLeave={handleRowLeave}
+                sx={{
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    opacity: 1,
+                  },
+                }}
+              >
+                <TableCell sx={{ position: 'relative' }}>
+                  {user && hoveredRow === index && (
+                    <ReorderButtons
+                      index={index}
+                      totalItems={games.length}
+                      currentDate={game.date}
+                      prevDate={index > 0 ? games[index - 1].date : null}
+                      nextDate={index < games.length - 1 ? games[index + 1].date : null}
+                      onMoveUp={() => handleMoveUp(index)}
+                      onMoveDown={() => handleMoveDown(index)}
+                    />
+                  )}
+
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="right">
                     <Stack direction="column" alignItems="end" spacing={1} sx={{ fontSize: "medium"}}>
                       <PlayerDelta player={playerIdToStats[game.yellow_offense]} rating={game.yellow_offense_rating} delta={game.yellow_offense_delta} />
@@ -100,13 +150,13 @@ const MatchHistory = ({games, playersStats}) => {
                     <Typography variant="body2" sx={{ fontSize: "small" }}>{Math.round(((game.yellow_offense_rating - game.yellow_offense_delta) + (game.yellow_defense_rating - game.yellow_defense_delta)) / 2)}</Typography>
                   </Stack>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ position: 'relative' }}>
                   <Stack direction="column" alignItems="center" spacing={1} sx={{ fontSize: "medium" }}>
                     <GameScore yellowScore={game.yellow_score} blackScore={game.black_score} />
                     <Typography variant="body2" sx={{ fontSize: "small" }}>{dateFormatter.format(new Date(game.date))}</Typography>
                   </Stack>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ position: 'relative' }}>
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="left">
                     <Typography variant="body2" sx={{ fontSize: "small", textAlign: "left" }}>{Math.round(((game.black_offense_rating - game.black_offense_delta) + (game.black_defense_rating - game.black_defense_delta)) / 2)}</Typography>
                     <Stack direction="column" alignItems="start" spacing={1} sx={{ fontSize: "medium" }}>

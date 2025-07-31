@@ -23,7 +23,10 @@ import Typography from "@mui/material/Typography";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId) => {
+const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId, setIsLoading = null) => {
+  if (setIsLoading) {
+    setIsLoading(true);
+  }
   const [games, timeseries, players, playersStats] = await Promise.all([
     Games.readGames(seasonId),
     TimeSeries.readTimeSeries(seasonId),
@@ -34,10 +37,13 @@ const refreshData = async (setGames, setTimeSeries, setPlayers, setPlayersStats,
   setTimeSeries(timeseries);
   setPlayers(players);
   setPlayersStats(playersStats);
+  if (setIsLoading) {
+    setIsLoading(false);
+  }
 }
 
 const Home = () => {
-  const { token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,8 +53,6 @@ const Home = () => {
   const [players, setPlayers] = useState([]);
   const [playersStats, setPlayersStats] = useState([]);
   const [seasonId, setSeasonId] = useState(1);
-
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,35 +70,10 @@ const Home = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${API_URL}/user`, {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        })
-        if (!res.ok) {
-          throw new Error("User not found");
-        }
-
-        const user = await res.json();
-        if (user.authenticated) {
-          setUser(user.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      }
-    }
-    fetchUser();
-  }, [token]);
-
   if (error) return <ErrorPage />;
   return (
     <>
-    <NavBar user={user} setUser={setUser} />
+    <NavBar />
     <Container maxWidth="md" sx={{ marginBottom: 20, position: "relative" }}>
       <Typography variant="h3" component="h1" marginY={4}>Leaderboard</Typography>
       {
@@ -105,9 +84,7 @@ const Home = () => {
             seasonId={seasonId}
             onChange={async (e) => {
               setSeasonId(e.target.value);
-              setIsLoading(true);
-              await refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, e.target.value);
-              setIsLoading(false);
+              await refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, e.target.value, setIsLoading);
             }}
           />
           <Leaderboard playersStats={playersStats} seasonId={seasonId} />
@@ -119,7 +96,7 @@ const Home = () => {
       {
         isLoading ?
         <LoadingIcon /> :
-        <MatchHistory games={games} playersStats={playersStats} />
+        <MatchHistory games={games} playersStats={playersStats} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
       }
 
       {

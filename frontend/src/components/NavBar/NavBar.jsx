@@ -16,8 +16,8 @@ const handleLogin = async () => {
   window.location.href = `${API_URL}/auth/google`;
 }
 
-const NavBar = ({ user, setUser }) => {
-  const { logout } = useContext(AuthContext);
+const NavBar = () => {
+  const { user, setUser, logout } = useContext(AuthContext);
   const trigger = useScrollTrigger({
     disableHysteresis: true,
     threshold: 0,

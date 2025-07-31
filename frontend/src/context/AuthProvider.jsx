@@ -1,9 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { AuthContext } from './AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${API_URL}/user`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+        if (!res.ok) {
+          throw new Error("User not found");
+        }
+
+        const user = await res.json();
+        if (user.authenticated) {
+          setUser(user.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      }
+    }
+    fetchUser();
+  }, [token]);
 
   const login = (jwt) => {
     localStorage.setItem('token', jwt);
@@ -16,7 +44,7 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, logout }}>
+    <AuthContext.Provider value={{ token, user, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

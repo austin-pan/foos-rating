@@ -45,8 +45,26 @@ const deleteLatestGame = async (token) => {
   }
 };
 
+const moveGame = async (game_id, delta, token) => {
+  if (!token) {
+    throw new Error("No token provided");
+  }
+  const response = await fetch(`${API_URL}/api/games/move/?game_id=${game_id}&delta=${delta}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to move game");
+  }
+}
+
 export default {
   readGames,
   addGame,
   deleteLatestGame,
+  moveGame
 };
