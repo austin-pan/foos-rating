@@ -50,9 +50,8 @@ const moveGame = async (game_id, delta, token) => {
     throw new Error("No token provided");
   }
   const response = await fetch(`${API_URL}/api/games/move/?game_id=${game_id}&delta=${delta}`, {
-    method: "POST",
+    method: "PUT",
     headers: {
-      "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     }
   });
@@ -62,9 +61,28 @@ const moveGame = async (game_id, delta, token) => {
   }
 }
 
+const updateGame = async (game_id, game, token) => {
+  if (!token) {
+    throw new Error("No token provided");
+  }
+  const response = await fetch(`${API_URL}/api/games/?game_id=${game_id}`, {
+    method: "PUT",
+    body: JSON.stringify(game),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to update game");
+  }
+}
+
 export default {
   readGames,
   addGame,
   deleteLatestGame,
-  moveGame
+  moveGame,
+  updateGame
 };

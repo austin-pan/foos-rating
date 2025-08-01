@@ -31,7 +31,14 @@ class PlayerStats:
         self.win_rate = 0 if self.num_games == 0 else self.num_wins / self.num_games
 
 
-def get_ratings_query(season_id: int, date: datetime.date | None = None) -> Select[tuple[str, float]]:
+def get_ratings_query(
+    season_id: int,
+    date: datetime.date | None = None,
+    game_number: int | None = None
+) -> Select[tuple[str, float]]:
+    """
+    Get the ratings query for the given season, date, and game number.
+    """
     query = (
         select(models.TimeSeries.player_id, models.TimeSeries.rating)
         .join(models.Game)
@@ -45,16 +52,26 @@ def get_ratings_query(season_id: int, date: datetime.date | None = None) -> Sele
     )
     if date:
         query = query.where(models.Game.date <= date)
+    if game_number:
+        query = query.where(models.Game.game_number <= game_number)
     return query
 
 
-def get_player_ratings(session: Session, season_id: int, *, player_ids: list[str] | None = None, date: datetime.date | None = None) -> dict[str, float]:
+def get_player_ratings(
+    session: Session,
+    season_id: int,
+    *,
+    player_ids: list[str] | None = None,
+    date: datetime.date | None = None,
+    game_number: int | None = None
+) -> dict[str, float]:
     """
     Get the ratings for the given player IDs and season.
     If player_ids is None, get the ratings for all players.
     If date is None, get the ratings for the latest game.
+    If game_number is None, get the ratings for the latest game.
     """
-    ratings_query = get_ratings_query(season_id, date)
+    ratings_query = get_ratings_query(season_id, date, game_number)
     if player_ids:
         ratings_query = ratings_query.where(col(models.TimeSeries.player_id).in_(player_ids))
     player_id_to_rating: dict[str, float] = dict(session.exec(ratings_query).all())

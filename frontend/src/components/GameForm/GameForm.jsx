@@ -91,7 +91,7 @@ const DatePickerField = ({fieldName, label, formData, onFormChange, sx}) => {
 }
 
 
-const GameRecorder = ({players, refreshData}) => {
+const GameForm = ({ players, refreshData, onSubmit }) => {
   const { token } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
@@ -149,8 +149,7 @@ const GameRecorder = ({players, refreshData}) => {
         throw new Error("Scores cannot be the same");
       }
 
-      console.log(formData);
-      await Games.addGame(formData, token);
+      onSubmit(formData, token);
       refreshData();
       setErrorMessage(null);
       setFormData({
@@ -251,4 +250,4 @@ const GameRecorder = ({players, refreshData}) => {
   )
 };
 
-export default GameRecorder;
+export default GameForm;

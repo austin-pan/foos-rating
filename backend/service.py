@@ -148,7 +148,66 @@ def create_game(game: models.GameCreate):
         return db_game
 
 
-@app.post("/games/move/")
+@app.put("/games/")
+def update_game(game_id: int, game: models.GameCreate):
+    with Session(db.engine) as session:
+        db_game = session.exec(
+            select(models.Game)
+            .where(models.Game.id == game_id)
+        ).first()
+        if not db_game:
+            raise HTTPException(status_code=404, detail="Game not found")
+
+        db_game.date = (
+            datetime.datetime.fromisoformat(game.iso_date)
+            .astimezone(PST)
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+        )
+        db_game.yellow_score = game.yellow_score
+        db_game.black_score = game.black_score
+        db_game.yellow_offense = game.yellow_offense
+        db_game.yellow_defense = game.yellow_defense
+        db_game.black_offense = game.black_offense
+        db_game.black_defense = game.black_defense
+        db_game.updated_at = datetime.datetime.now(PST)
+
+        session.add(db_game)
+        session.commit()
+        session.refresh(db_game)
+
+        # Delete stale timeseries points
+        stale_timeseries_points = session.exec(
+            select(models.TimeSeries)
+            .join(models.Game)
+            .where(models.Game.game_number >= db_game.game_number)
+        ).all()
+        for stale_timeseries_point in stale_timeseries_points:
+            session.delete(stale_timeseries_point)
+        session.commit()
+
+        # Recalculate timeseries points
+        affected_games = session.exec(
+            select(models.Game)
+            .where(models.Game.game_number >= db_game.game_number)
+        ).all()
+        player_id_to_snapshot_rating = rating.get_player_ratings(
+            session,
+            db_game.season_id,
+            game_number=db_game.game_number
+        )
+        timeseries_points = rating.calculate_timeseries_points(
+            sorted(affected_games, key=lambda g: g.game_number),
+            player_id_to_snapshot_rating,
+            db_game.season.rating_method
+        )
+        session.add_all(timeseries_points)
+        session.commit()
+        session.refresh(db_game)
+
+        return db_game
+
+
+@app.put("/games/move/")
 def move_game(game_id: int, delta: int):
     if delta == 0:
         raise HTTPException(status_code=400, detail="Invalid delta")
@@ -164,12 +223,6 @@ def move_game(game_id: int, delta: int):
         src_game_number = int(db_game.game_number)
         dst_game_number = src_game_number + delta
 
-        # Isolate game getting moved
-        db_game.game_number = -1
-        session.add(db_game)
-        session.commit()
-        session.refresh(db_game)
-
         # Delete stale timeseries points
         stale_timeseries_points = session.exec(
             select(models.TimeSeries)
@@ -184,21 +237,26 @@ def move_game(game_id: int, delta: int):
         affected_games = session.exec(
             select(models.Game)
             .where(models.Game.game_number >= min(src_game_number, dst_game_number))
-            .order_by(desc(models.Game.game_number))
         ).all()
+        # Isolate game getting moved
+        db_game.game_number = -1
+        session.add(db_game)
+        session.commit()
+        session.refresh(db_game)
+
+        # Shift game numbers
         shift_games = [
             affected_game
             for affected_game in affected_games
-            if affected_game.game_number >= min(src_game_number, dst_game_number)
+            if affected_game.game_number != src_game_number
+            and affected_game.game_number >= min(src_game_number, dst_game_number)
             and affected_game.game_number <= max(src_game_number, dst_game_number)
         ]
-        # Shift game numbers
         for shift_game in shift_games:
-            if shift_game.game_number != src_game_number:
-                shift_game.game_number += -1 if delta > 0 else 1
-                session.add(shift_game)
-                session.commit()
-                session.refresh(shift_game)
+            shift_game.game_number += -1 if delta > 0 else 1
+            session.add(shift_game)
+            session.commit()
+            session.refresh(shift_game)
         # Move src game
         db_game.game_number = dst_game_number
         session.add(db_game)
@@ -213,10 +271,10 @@ def move_game(game_id: int, delta: int):
         player_id_to_snapshot_rating = rating.get_player_ratings(
             session,
             current_season.id,
-            date=db_game.date
+            game_number=db_game.game_number
         )
         timeseries_points = rating.calculate_timeseries_points(
-            affected_games,
+            sorted(affected_games, key=lambda g: g.game_number),
             player_id_to_snapshot_rating,
             current_season.rating_method
         )

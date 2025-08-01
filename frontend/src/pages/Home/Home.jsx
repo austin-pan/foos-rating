@@ -107,7 +107,13 @@ const Home = () => {
           {
             isLoading ?
             <LoadingIcon /> :
-            <GameForm players={players} refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)} />
+            <GameForm
+              players={players}
+              refreshData={() => refreshData(setGames, setTimeSeries, setPlayers, setPlayersStats, seasonId)}
+              onSubmit={async (formData, token) => {
+                await Games.addGame(formData, token);
+              }}
+            />
           }
           <Typography variant="h4" component="h2" marginY={4}>Add Player</Typography>
           {

@@ -16,6 +16,11 @@ class GameCreate(GameBase):
     iso_date: str
 
 
+class GameUpdate(GameBase):
+    id: int
+    iso_date: str
+
+
 class GamePublic(GameBase):
     id: int
     date: datetime.datetime
