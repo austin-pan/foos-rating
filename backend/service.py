@@ -179,7 +179,10 @@ def update_game(game_id: int, game: models.GameCreate):
         stale_timeseries_points = session.exec(
             select(models.TimeSeries)
             .join(models.Game)
-            .where(models.Game.game_number >= db_game.game_number)
+            .where(
+                models.Game.game_number >= db_game.game_number,
+                models.Game.season_id == db_game.season_id
+            )
         ).all()
         for stale_timeseries_point in stale_timeseries_points:
             session.delete(stale_timeseries_point)
@@ -188,7 +191,10 @@ def update_game(game_id: int, game: models.GameCreate):
         # Recalculate timeseries points
         affected_games = session.exec(
             select(models.Game)
-            .where(models.Game.game_number >= db_game.game_number)
+            .where(
+                models.Game.game_number >= db_game.game_number,
+                models.Game.season_id == db_game.season_id
+            )
         ).all()
         player_id_to_snapshot_rating = rating.get_player_ratings(
             session,
@@ -227,7 +233,10 @@ def move_game(game_id: int, delta: int):
         stale_timeseries_points = session.exec(
             select(models.TimeSeries)
             .join(models.Game)
-            .where(models.Game.game_number >= min(src_game_number, dst_game_number))
+            .where(
+                models.Game.game_number >= min(src_game_number, dst_game_number),
+                models.Game.season_id == db_game.season_id
+            )
         ).all()
         for stale_timeseries_point in stale_timeseries_points:
             session.delete(stale_timeseries_point)
@@ -236,7 +245,10 @@ def move_game(game_id: int, delta: int):
         # Move games around
         affected_games = session.exec(
             select(models.Game)
-            .where(models.Game.game_number >= min(src_game_number, dst_game_number))
+            .where(
+                models.Game.game_number >= min(src_game_number, dst_game_number),
+                models.Game.season_id == db_game.season_id
+            )
         ).all()
         # Isolate game getting moved
         db_game.game_number = -1
@@ -349,18 +361,77 @@ def read_games(season_id: int, offset: int = 0, limit: int = Query(default=20, l
         return games
 
 
-@app.delete("/games/latest/")
-def delete_latest_game():
+@app.delete("/games/")
+def delete_game(game_id: int):
     with Session(db.engine) as session:
         db_game = session.exec(
             select(models.Game)
-            .order_by(desc(col(models.Game.game_number)))
+            .where(models.Game.id == game_id)
         ).first()
         if not db_game:
             raise HTTPException(status_code=404, detail="Game not found")
         # Delete the game and all associated timeseries points through cascade
         session.delete(db_game)
         session.commit()
+
+        affected_games = session.exec(
+            select(models.Game)
+            .where(
+                models.Game.game_number >= db_game.game_number,
+                models.Game.id != game_id
+            )
+        ).all()
+        # Shift game numbers
+        shift_games = [
+            affected_game
+            for affected_game in affected_games
+            if affected_game.game_number != db_game.game_number
+            and affected_game.game_number >= db_game.game_number
+        ]
+        for shift_game in shift_games:
+            shift_game.game_number -= 1
+            session.add(shift_game)
+            session.commit()
+            session.refresh(shift_game)
+
+        # Delete stale timeseries points
+        stale_timeseries_points = session.exec(
+            select(models.TimeSeries)
+            .join(models.Game)
+            .where(
+                models.Game.game_number >= db_game.game_number,
+                models.Game.season_id == db_game.season_id,
+                models.Game.id != game_id
+            )
+        ).all()
+        for stale_timeseries_point in stale_timeseries_points:
+            session.delete(stale_timeseries_point)
+        session.commit()
+
+        # Recalculate timeseries points
+        games_to_recalculate = [
+            affected_game
+            for affected_game in affected_games
+            if affected_game.game_number != db_game.game_number
+            and affected_game.season_id == db_game.season_id
+        ]
+        player_id_to_snapshot_rating = rating.get_player_ratings(
+            session,
+            db_game.season_id,
+            game_number=db_game.game_number
+        )
+        curr_season = session.exec(
+            select(models.Season)
+            .where(models.Season.active)
+        ).one()
+        timeseries_points = rating.calculate_timeseries_points(
+            sorted(games_to_recalculate, key=lambda g: g.game_number),
+            player_id_to_snapshot_rating,
+            curr_season.rating_method
+        )
+        session.add_all(timeseries_points)
+        session.commit()
+
         return {"ok": True}
 
 

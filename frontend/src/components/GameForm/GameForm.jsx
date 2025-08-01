@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 
 import dayjs from "dayjs";
 
@@ -12,9 +12,9 @@ import MuiAlert from "@mui/material/Alert";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import Box from '@mui/material/Box';
 
 import { AuthContext } from "../../context/AuthContext.js";
-import Games from "../../db/Games.js";
 
 const positionIds = ["yellow_offense", "yellow_defense", "black_offense", "black_defense"];
 
@@ -91,7 +91,7 @@ const DatePickerField = ({fieldName, label, formData, onFormChange, sx}) => {
 }
 
 
-const GameForm = ({ players, refreshData, onSubmit }) => {
+const GameForm = ({ players, refreshData, onSubmit, initialData, isEditing = false }) => {
   const { token } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
@@ -101,9 +101,23 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
     "black_offense": "",
     "black_defense": "",
     "black_score": 0,
-    "iso_date": null,
     "date": dayjs()
   });
+
+  // Initialize form with initialData if provided (for editing)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        yellow_offense: initialData.yellow_offense || "",
+        yellow_defense: initialData.yellow_defense || "",
+        yellow_score: initialData.yellow_score || 0,
+        black_offense: initialData.black_offense || "",
+        black_defense: initialData.black_defense || "",
+        black_score: initialData.black_score || 0,
+        date: dayjs(initialData.date)
+      });
+    }
+  }, [initialData]);
 
   const [errorMessage, setErrorMessage] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -114,7 +128,7 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
     setSnackbarOpen(true);
   }
 
-  const addGame = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const participants = [
@@ -132,49 +146,48 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
         throw new Error("Date is required");
       }
 
-      formData.iso_date = formData.date.toISOString();
-      formData.yellow_score = Number(formData.yellow_score);
-      formData.black_score = Number(formData.black_score);
+      const submissionData = {
+        ...formData,
+        iso_date: formData.date.toISOString(),
+        yellow_score: Number(formData.yellow_score),
+        black_score: Number(formData.black_score)
+      };
 
-      if (isNaN(formData.yellow_score) || isNaN(formData.black_score)) {
+      if (isNaN(submissionData.yellow_score) || isNaN(submissionData.black_score)) {
         throw new Error("Scores must be numbers");
       }
-      if (formData.yellow_score < 0 || formData.black_score < 0) {
+      if (submissionData.yellow_score < 0 || submissionData.black_score < 0) {
         throw new Error("Scores cannot be negative");
       }
-      if (formData.yellow_score == 0 && formData.black_score == 0) {
-        throw new Error("Both teams' scores cannot be 0")
+      if (submissionData.yellow_score === 0 && submissionData.black_score === 0) {
+        throw new Error("Both teams' scores cannot be 0");
       }
-      if (formData.yellow_score == formData.black_score) {
+      if (submissionData.yellow_score === submissionData.black_score) {
         throw new Error("Scores cannot be the same");
       }
 
-      onSubmit(formData, token);
-      refreshData();
+      await onSubmit(submissionData, token);
       setErrorMessage(null);
-      setFormData({
-        ...formData,
-        "yellow_score": 0,
-        "black_score": 0,
-        "iso_date": null,
-        "date": dayjs()
-      });
-      showSnackbar("Game added");
+
+      if (!isEditing) {
+        // Reset form only for new game creation
+        setFormData({
+          ...formData,
+          "yellow_score": 0,
+          "black_score": 0,
+          "iso_date": null,
+          "date": dayjs()
+        });
+        showSnackbar("Game added");
+      } else {
+        showSnackbar("Game updated");
+      }
+
+      refreshData?.();
     } catch (e) {
       setErrorMessage(e.message);
     }
-  }
-
-  const deleteLatestGame = async () => {
-    try {
-      await Games.deleteLatestGame(token);
-      showSnackbar("Game deleted");
-      refreshData();
-      setErrorMessage(null);
-    } catch {
-      setErrorMessage("Failed to delete game")
-    }
-  }
+  };
 
   const onFormChange = (e) => {
     onKVFormChange(e.target.name, e.target.value);
@@ -196,8 +209,8 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
 
   return (
     <>
-      {errorMessage ? <Alert severity="error" sx={{ marginBottom: 2 }}>{errorMessage}</Alert> : null}
-      <Container component="form" onSubmit={addGame}>
+      {errorMessage && <Alert severity="error" sx={{ marginBottom: 2 }}>{errorMessage}</Alert>}
+      <Container component="form" onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid offset={{xs: 0, sm: 3}} size={{xs: 12, sm: 6}} sx={{ display: 'flex' }}>
             <DatePickerField fieldName="date" label="Date" formData={formData} onFormChange={onKVFormChange} sx={{ flexGrow: 1 }} />
@@ -212,25 +225,9 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
             <PlayersSelect fieldName="black_defense" label="Black Defense" formData={formData} onFormChange={onPlayerChange} players={players} />
             <ScoreField fieldName="black_score" label="Black Score" formData={formData} onFormChange={onFormChange} />
           </Grid>
-        </Grid>
-
-        <Grid container spacing={2} sx={{ marginTop: 2 }}>
-          <Grid size={{xs: 12, sm: 8}} sx={{ display: 'flex' }}>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{ flexGrow: 1 }}
-            >
-              Add Game
-            </Button>
-          </Grid>
-          <Grid size={{xs: 12, sm: 4}} sx={{ display: 'flex' }}>
-            <Button
-              onClick={deleteLatestGame}
-              variant="outlined"
-              sx={{ flexGrow: 1 }}
-            >
-              Delete Last Game
+          <Grid offset={{xs: 0, sm: 3}} size={{xs: 12, sm: 6}} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button type="submit" variant="contained" color="primary" sx={{ flexGrow: 1 }}>
+              {isEditing ? 'Update Game' : 'Add Game'}
             </Button>
           </Grid>
         </Grid>
@@ -242,7 +239,7 @@ const GameForm = ({ players, refreshData, onSubmit }) => {
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <MuiAlert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+        <MuiAlert onClose={() => setSnackbarOpen(false)} severity="success">
           {snackbarMessage}
         </MuiAlert>
       </Snackbar>

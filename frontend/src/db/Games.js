@@ -29,22 +29,6 @@ const addGame = async (game, token) => {
   }
 };
 
-const deleteLatestGame = async (token) => {
-  if (!token) {
-    throw new Error("No token provided");
-  }
-  const response = await fetch(`${API_URL}/api/games/latest/`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error("Unable to delete latest game");
-  }
-};
-
 const moveGame = async (game_id, delta, token) => {
   if (!token) {
     throw new Error("No token provided");
@@ -79,10 +63,26 @@ const updateGame = async (game_id, game, token) => {
   }
 }
 
+const deleteGame = async (game_id, token) => {
+  if (!token) {
+    throw new Error("No token provided");
+  }
+  const response = await fetch(`${API_URL}/api/games/?game_id=${game_id}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to delete game");
+  }
+}
+
 export default {
   readGames,
   addGame,
-  deleteLatestGame,
   moveGame,
-  updateGame
+  updateGame,
+  deleteGame
 };

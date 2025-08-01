@@ -16,11 +16,6 @@ class GameCreate(GameBase):
     iso_date: str
 
 
-class GameUpdate(GameBase):
-    id: int
-    iso_date: str
-
-
 class GamePublic(GameBase):
     id: int
     date: datetime.datetime
@@ -45,7 +40,7 @@ class GameDeltaPublic(GameBase):
 
 class Game(GameBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    game_number: int | None = Field(unique=True)
+    game_number: int | None
     date: datetime.datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
@@ -73,6 +68,7 @@ class Game(GameBase, table=True):
     season: "Season" = Relationship(back_populates="games")
 
 Index("game_date_idx", Game.date)
+Index("game_game_number_removed_at_idx", Game.game_number, Game.removed_at, unique=True)
 
 
 ## Player models
