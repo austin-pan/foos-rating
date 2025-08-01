@@ -83,6 +83,11 @@ const DatePickerField = ({fieldName, label, formData, onFormChange, sx}) => {
           textField: {
             size: "small",
             margin: "dense"
+          },
+          popper: {
+            sx: {
+              zIndex: 1600
+            }
           }
         }}
       />
