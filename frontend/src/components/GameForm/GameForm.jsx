@@ -88,6 +88,11 @@ const DatePickerField = ({fieldName, label, formData, onFormChange, sx}) => {
             sx: {
               zIndex: 1600
             }
+          },
+          dialog: {
+            sx: {
+              zIndex: 1600
+            }
           }
         }}
       />
