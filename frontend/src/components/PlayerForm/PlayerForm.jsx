@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 
 import Container from "@mui/material/Container";
 import TextField from "@mui/material/TextField";
@@ -7,8 +7,10 @@ import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
 
 import Players from "../../db/Players.js";
+import { AuthContext } from "../../context/AuthContext.js";
 
 const PlayerRecorder = ({players, refreshData}) => {
+  const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({name: ""});
   const [errorMessage, setErrorMessage] = useState(null)
 
@@ -19,7 +21,7 @@ const PlayerRecorder = ({players, refreshData}) => {
       if (players.some(p => p.name.trim().toLowerCase() == formData.name.trim().toLowerCase())) {
         throw new Error("Player already exists")
       }
-      await Players.addPlayer(formData);
+      await Players.addPlayer(formData, token);
       refreshData();
       setErrorMessage(null);
       setFormData({name: ""});

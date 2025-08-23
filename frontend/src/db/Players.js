@@ -24,13 +24,13 @@ const readPlayersStats = async (seasonId) => {
   return playersStats;
 }
 
-const addPlayer = async (player) => {
+const addPlayer = async (player, token) => {
   const response = await fetch(`${API_URL}/api/players/`, {
     method: "POST",
     body: JSON.stringify(player),
-    credentials: "include",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
     }
   });
 
