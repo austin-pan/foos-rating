@@ -174,6 +174,7 @@ const SeasonSelector = ({ seasonId, onChange }) => {
       size="small"
       margin="dense"
     >
+      <option value={3}>Season 3</option>
       <option value={2}>Season 2</option>
       <option value={1}>Season 1</option>
     </TextField>
