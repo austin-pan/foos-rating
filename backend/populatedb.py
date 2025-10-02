@@ -31,16 +31,23 @@ def populate_db():
     seasons = [
         {
             "name": "1",
-            "start_date": datetime.date(2024, 1, 1),
-            "end_date": datetime.date(2024, 6, 30),
+            "start_date": datetime.date(2025, 1, 1),
+            "end_date": datetime.date(2025, 6, 30),
             "active": False,
             "rating_method": "sigmoid_differential"
         },
         {
             "name": "2",
-            "start_date": datetime.date(2024, 7, 1),
-            "end_date": datetime.date(2024, 12, 31),
+            "start_date": datetime.date(2025, 7, 1),
+            "end_date": datetime.date(2025, 9, 30),
             "active": True,
+            "rating_method": "sigmoid_differential"
+        },
+        {
+            "name": "3",
+            "start_date": datetime.date(2025, 10, 1),
+            "end_date": datetime.date(2025, 12, 31),
+            "active": False,
             "rating_method": "sigmoid_differential"
         }
     ]
