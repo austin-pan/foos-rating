@@ -21,7 +21,10 @@ const readPlayersStats = async (seasonId) => {
   }
 
   const playersStats = await response.json()
-  return playersStats;
+  return playersStats.map((player, index) => ({
+    ...player,
+    color: `oklch(0.5818 0.1232 ${(360/playersStats.length) * index})`,
+  }));
 }
 
 const addPlayer = async (player, token) => {
