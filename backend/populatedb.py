@@ -40,7 +40,7 @@ def populate_db():
             "name": "2",
             "start_date": datetime.date(2025, 7, 1),
             "end_date": datetime.date(2025, 9, 30),
-            "active": True,
+            "active": False,
             "rating_method": "sigmoid_differential"
         },
         {
@@ -48,6 +48,13 @@ def populate_db():
             "start_date": datetime.date(2025, 10, 1),
             "end_date": datetime.date(2025, 12, 31),
             "active": False,
+            "rating_method": "sigmoid_differential"
+        },
+        {
+            "name": "3",
+            "start_date": datetime.date(2026, 1, 1),
+            "end_date": datetime.date(2025, 3, 31),
+            "active": True,
             "rating_method": "sigmoid_differential"
         }
     ]
